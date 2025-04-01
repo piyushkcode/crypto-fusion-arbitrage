@@ -35,6 +35,7 @@
 
   body {
     @apply bg-white text-foreground;
+    font-family: 'Inter', sans-serif;
   }
 }
 
@@ -46,4 +47,22 @@
 
 .glass {
   @apply bg-white/70 backdrop-blur-lg border border-gray-200 rounded-2xl;
+}
+
+/* Custom scrollbar for light theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #8D4B38;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5D3A26;
 }
