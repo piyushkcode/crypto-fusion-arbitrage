@@ -6,15 +6,22 @@ import StatsCard from '@/components/StatsCard';
 import PriceTable from '@/components/PriceTable';
 import ArbitrageOpportunities from '@/components/ArbitrageOpportunities';
 import PriceComparisonChart from '@/components/PriceComparisonChart';
+import ArbitrageType from '@/components/ArbitrageType';
+import TradingSettings from '@/components/TradingSettings';
 import { Activity, TrendingUp, Zap, RefreshCw } from 'lucide-react';
 import { generateAllPriceData, generateArbitrageOpportunities, getMostActivePairs, cryptoPairs } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
+  const { toast } = useToast();
   const [priceData, setPriceData] = useState(generateAllPriceData());
   const [opportunities, setOpportunities] = useState(generateArbitrageOpportunities(priceData));
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [isLoading, setIsLoading] = useState(false);
+  const [arbitrageType, setArbitrageType] = useState('simple');
+  const [autoTrading, setAutoTrading] = useState(false);
+  const [minProfit, setMinProfit] = useState(1.0);
 
   // Update data every 10 seconds
   useEffect(() => {
@@ -31,6 +38,24 @@ const Dashboard = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Handle arbitrage type change
+  const handleArbitrageTypeChange = (type: string) => {
+    setArbitrageType(type);
+    toast({
+      title: "Strategy Changed",
+      description: `Switched to ${type} arbitrage strategy`,
+    });
+  };
+
+  // Handle auto trading change
+  const handleAutoTradingChange = (enabled: boolean) => {
+    setAutoTrading(enabled);
+    toast({
+      title: enabled ? "Auto Trading Enabled" : "Auto Trading Disabled",
+      description: enabled ? "Our trading bot will execute trades automatically" : "Manual trade confirmation required",
+    });
+  };
 
   // Filter price data for the selected pair
   const filteredPriceData = priceData.filter(data => data.pair === selectedPair);
@@ -50,7 +75,7 @@ const Dashboard = () => {
         <Sidebar />
         <main className="flex-1 p-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">Arbitrage Dashboard</h1>
+            <h1 className="text-2xl font-bold mb-2">CryptoVantage Dashboard</h1>
             <p className="text-gray-400">Monitor real-time prices and arbitrage opportunities</p>
           </div>
           
@@ -77,7 +102,7 @@ const Dashboard = () => {
             <StatsCard 
               title="Last Update" 
               value="Just now" 
-              icon={<RefreshCw className={`h-5 w-5 text-crypto-purple ${isLoading ? "animate-spin" : ""}`} />}
+              icon={<RefreshCw className={`h-5 w-5 text-crypto-burgundy ${isLoading ? "animate-spin" : ""}`} />}
             />
           </div>
           
@@ -93,7 +118,7 @@ const Dashboard = () => {
                       onClick={() => setSelectedPair(pair)}
                       className={`px-3 py-1 rounded-full text-sm ${
                         selectedPair === pair 
-                          ? 'bg-crypto-purple text-white' 
+                          ? 'bg-crypto-burgundy text-white' 
                           : 'bg-crypto-light-card/30 text-gray-300 hover:bg-crypto-light-card/50'
                       }`}
                     >
@@ -110,6 +135,20 @@ const Dashboard = () => {
             
             {/* Right sidebar */}
             <div className="space-y-6">
+              {/* Arbitrage Type Selector */}
+              <ArbitrageType 
+                onTypeChange={handleArbitrageTypeChange}
+                selectedType={arbitrageType}
+              />
+              
+              {/* Trading Settings */}
+              <TradingSettings 
+                autoTrading={autoTrading}
+                onAutoTradingChange={handleAutoTradingChange}
+                minProfit={minProfit}
+                onMinProfitChange={setMinProfit}
+              />
+              
               {/* Most active pairs */}
               <Card className="bg-crypto-card border-gray-800">
                 <CardHeader className="pb-2">
@@ -127,7 +166,7 @@ const Dashboard = () => {
                           <span className="h-6 w-6 rounded-full bg-crypto-light-card flex items-center justify-center text-xs mr-2">
                             {index + 1}
                           </span>
-                          <span className={selectedPair === pair ? "text-crypto-purple" : "text-white"}>
+                          <span className={selectedPair === pair ? "text-crypto-burgundy" : "text-white"}>
                             {pair}
                           </span>
                         </div>

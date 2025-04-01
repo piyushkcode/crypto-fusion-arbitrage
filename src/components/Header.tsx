@@ -7,7 +7,7 @@ const Header = () => {
   return (
     <header className="bg-crypto-card shadow-md py-3 px-6 flex justify-between items-center">
       <div className="flex items-center">
-        <h1 className="text-xl font-bold text-white mr-2">Crypto Fusion</h1>
+        <h1 className="text-xl font-bold text-white mr-2">CryptoVantage</h1>
         <span className="text-crypto-purple font-medium">Arbitrage</span>
       </div>
       <div className="flex items-center space-x-4">
@@ -22,7 +22,7 @@ const Header = () => {
         </Button>
         <div className="flex items-center cursor-pointer">
           <div className="h-8 w-8 rounded-full bg-crypto-purple flex items-center justify-center text-white font-medium mr-2">
-            CF
+            CV
           </div>
           <span className="text-sm text-gray-300 hidden md:block">User</span>
           <ChevronDown className="h-4 w-4 text-gray-400 ml-1" />

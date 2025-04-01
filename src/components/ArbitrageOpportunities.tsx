@@ -60,7 +60,7 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-medium text-white">{opportunity.pair}</div>
-                  <Badge variant={getBadgeVariant(opportunity.status)} className="capitalize">
+                  <Badge variant={getBadgeVariant(opportunity.status)} className="capitalize bg-crypto-burgundy">
                     {opportunity.status}
                   </Badge>
                 </div>
@@ -78,7 +78,7 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
                   </span>
                   <span className={cn(
                     "font-medium",
-                    opportunity.profitPercent > 1 ? "text-crypto-green" : "text-crypto-purple"
+                    opportunity.profitPercent > 1 ? "text-crypto-green" : "text-crypto-burgundy"
                   )}>
                     {opportunity.profitPercent.toFixed(2)}% Profit
                   </span>

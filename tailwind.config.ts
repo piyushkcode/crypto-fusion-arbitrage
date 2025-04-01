@@ -68,10 +68,13 @@ export default {
                     'green': '#25D366',
                     'red': '#FF4136',
                     'yellow': '#FFDC00',
-                    'purple': '#9b87f5',
-                    'dark': '#121826',
-                    'card': '#1E293B',
-                    'light-card': '#283C5B'
+                    'purple': '#a83251',
+                    'burgundy': '#a83251',
+                    'light-burgundy': '#c6576f',
+                    'dark-burgundy': '#7a2639',
+                    'dark': '#271216',
+                    'card': '#3c1e24',
+                    'light-card': '#562c33'
                 }
 			},
 			borderRadius: {
