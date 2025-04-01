@@ -1,0 +1,97 @@
+
+version: '3.8'
+
+services:
+  # MongoDB for real-time price data
+  mongodb:
+    image: mongo:latest
+    container_name: crypto_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    restart: unless-stopped
+
+  # PostgreSQL for users and trades data
+  postgres:
+    image: postgres:latest
+    container_name: crypto_postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=your_password
+      - POSTGRES_DB=crypto_arbitrage
+    restart: unless-stopped
+
+  # TimescaleDB for time-series data
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: crypto_timescaledb
+    ports:
+      - "5433:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=your_password
+      - POSTGRES_DB=timescale_db
+    restart: unless-stopped
+
+  # Redis for caching
+  redis:
+    image: redis:latest
+    container_name: crypto_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Flask backend
+  flask:
+    build: ./backend
+    container_name: crypto_backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - mongodb
+      - postgres
+      - timescaledb
+      - redis
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - MONGO_URI=mongodb://admin:password@mongodb:27017/
+      - POSTGRES_URI=postgresql://postgres:your_password@postgres:5432/crypto_arbitrage
+      - TIMESCALE_URI=postgresql://postgres:your_password@timescaledb:5433/timescale_db
+      - REDIS_URI=redis://redis:6379/0
+    restart: unless-stopped
+
+  # React frontend
+  frontend:
+    build: ./frontend
+    container_name: crypto_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - flask
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  postgres_data:
+  timescaledb_data:
+  redis_data:
