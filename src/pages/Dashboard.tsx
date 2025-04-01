@@ -8,6 +8,7 @@ import ArbitrageOpportunities from '@/components/ArbitrageOpportunities';
 import PriceComparisonChart from '@/components/PriceComparisonChart';
 import { Activity, TrendingUp, Zap, RefreshCw } from 'lucide-react';
 import { generateAllPriceData, generateArbitrageOpportunities, getMostActivePairs, cryptoPairs } from '@/utils/mockData';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Dashboard = () => {
   const [priceData, setPriceData] = useState(generateAllPriceData());
