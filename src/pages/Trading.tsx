@@ -24,6 +24,22 @@ const Trading = () => {
   } = useTradingContext();
   
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
+  const [tradingStats, setTradingStats] = useState({
+    balance: balance,
+    activeTrades: 0,
+    totalProfit: totalProfit,
+    winRate: winRate
+  });
+  
+  // Update trading stats whenever trades change
+  useEffect(() => {
+    setTradingStats({
+      balance: balance,
+      activeTrades: trades.filter(t => t.status === 'pending').length,
+      totalProfit: totalProfit,
+      winRate: winRate
+    });
+  }, [trades, balance, totalProfit, winRate]);
   
   // Auto trading simulation
   useEffect(() => {
@@ -124,21 +140,21 @@ const Trading = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Trading Balance</p>
-                      <p className="text-2xl font-bold">${balance.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">${tradingStats.balance.toFixed(2)}</p>
                     </div>
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Active Trades</p>
-                      <p className="text-2xl font-bold">{trades.filter(t => t.status === 'pending').length}</p>
+                      <p className="text-2xl font-bold">{tradingStats.activeTrades}</p>
                     </div>
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Total Profit</p>
-                      <p className={`text-2xl font-bold ${totalProfit > 0 ? 'text-crypto-green' : totalProfit < 0 ? 'text-crypto-burgundy' : 'text-white'}`}>
-                        ${totalProfit.toFixed(2)}
+                      <p className={`text-2xl font-bold ${tradingStats.totalProfit > 0 ? 'text-crypto-green' : tradingStats.totalProfit < 0 ? 'text-crypto-burgundy' : 'text-white'}`}>
+                        ${tradingStats.totalProfit.toFixed(2)}
                       </p>
                     </div>
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Win Rate</p>
-                      <p className="text-2xl font-bold">{winRate.toFixed(0)}%</p>
+                      <p className="text-2xl font-bold">{tradingStats.winRate.toFixed(0)}%</p>
                     </div>
                   </div>
                 </CardContent>
