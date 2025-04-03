@@ -58,7 +58,7 @@ export const generateAllPriceData = (): PriceData[] => {
 };
 
 // Generate mock arbitrage opportunities
-export const generateArbitrageOpportunities = (priceData: PriceData[]): ArbitrageOpportunity[] => {
+export const generateArbitrageOpportunities = (priceData: PriceData[], minProfitThreshold: number = 0.2): ArbitrageOpportunity[] => {
   const opportunities: ArbitrageOpportunity[] = [];
   const statuses: ('active' | 'executed' | 'expired')[] = ['active', 'executed', 'expired'];
 
@@ -84,8 +84,8 @@ export const generateArbitrageOpportunities = (priceData: PriceData[]): Arbitrag
     const priceDiff = highestPrice.price - lowestPrice.price;
     const profitPercent = (priceDiff / lowestPrice.price) * 100;
     
-    // Only include if profit is significant enough (>0.2%)
-    if (profitPercent > 0.2) {
+    // Only include if profit is significant enough (> minProfitThreshold)
+    if (profitPercent > minProfitThreshold) {
       opportunities.push({
         id: `arb-${Math.random().toString(36).substring(2, 10)}`,
         buyExchange: lowestPrice.exchange,

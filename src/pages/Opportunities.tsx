@@ -8,13 +8,15 @@ import { generateAllPriceData, generateArbitrageOpportunities } from '@/utils/mo
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { RefreshCw } from 'lucide-react';
+import { useTradingContext } from '@/contexts/TradingContext';
 
 const Opportunities = () => {
   const { toast } = useToast();
+  const { minProfit } = useTradingContext();
   const [priceData, setPriceData] = useState(generateAllPriceData());
-  const [opportunities, setOpportunities] = useState(generateArbitrageOpportunities(priceData));
+  const [opportunities, setOpportunities] = useState(generateArbitrageOpportunities(priceData, minProfit));
   const [isLoading, setIsLoading] = useState(false);
-  const [minProfit, setMinProfit] = useState(0.5);
+  const [localMinProfit, setLocalMinProfit] = useState(0.5);
 
   // Function to refresh data
   const refreshData = () => {
@@ -23,7 +25,7 @@ const Opportunities = () => {
     setTimeout(() => {
       const newPriceData = generateAllPriceData();
       setPriceData(newPriceData);
-      setOpportunities(generateArbitrageOpportunities(newPriceData, minProfit));
+      setOpportunities(generateArbitrageOpportunities(newPriceData, localMinProfit));
       setIsLoading(false);
       
       toast({
@@ -39,7 +41,7 @@ const Opportunities = () => {
 
   // Filter by profit threshold
   const handleProfitFilterChange = (value: number) => {
-    setMinProfit(value);
+    setLocalMinProfit(value);
     setOpportunities(generateArbitrageOpportunities(priceData, value));
   };
 
@@ -77,7 +79,7 @@ const Opportunities = () => {
                       key={profit}
                       onClick={() => handleProfitFilterChange(profit)}
                       className={`px-3 py-1 rounded-full text-sm ${
-                        minProfit === profit 
+                        localMinProfit === profit 
                           ? 'bg-crypto-purple text-white' 
                           : 'bg-crypto-light-card/30 text-gray-300 hover:bg-crypto-light-card/50'
                       }`}
@@ -112,7 +114,7 @@ const Opportunities = () => {
                   <h3 className="text-sm text-gray-400 mb-1">Average Profit Potential</h3>
                   <p className="text-2xl font-bold text-crypto-green">
                     {opportunities.length > 0 
-                      ? (opportunities.reduce((sum, opp) => sum + opp.profit_percent, 0) / opportunities.length).toFixed(2) 
+                      ? (opportunities.reduce((sum, opp) => sum + opp.profitPercent, 0) / opportunities.length).toFixed(2) 
                       : '0.00'}%
                   </p>
                 </div>
@@ -120,7 +122,7 @@ const Opportunities = () => {
                   <h3 className="text-sm text-gray-400 mb-1">Most Profitable Pair</h3>
                   <p className="text-2xl font-bold">
                     {opportunities.length > 0 
-                      ? opportunities.reduce((max, opp) => max.profit_percent > opp.profit_percent ? max : opp).symbol
+                      ? opportunities.reduce((max, opp) => max.profitPercent > opp.profitPercent ? max : opp).pair
                       : 'N/A'}
                   </p>
                 </div>
@@ -128,8 +130,8 @@ const Opportunities = () => {
                   <h3 className="text-sm text-gray-400 mb-1">Best Exchange Route</h3>
                   <p className="text-lg font-bold">
                     {opportunities.length > 0 
-                      ? `${opportunities.reduce((max, opp) => max.profit_percent > opp.profit_percent ? max : opp).buy_exchange} → 
-                         ${opportunities.reduce((max, opp) => max.profit_percent > opp.profit_percent ? max : opp).sell_exchange}`
+                      ? `${opportunities.reduce((max, opp) => max.profitPercent > opp.profitPercent ? max : opp).buyExchange} → 
+                         ${opportunities.reduce((max, opp) => max.profitPercent > opp.profitPercent ? max : opp).sellExchange}`
                       : 'N/A'}
                   </p>
                 </div>

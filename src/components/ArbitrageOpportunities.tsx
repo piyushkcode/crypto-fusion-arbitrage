@@ -9,17 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ArrowRightIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface ArbitrageOpportunity {
-  id: string;
-  buyExchange: string;
-  sellExchange: string;
-  pair: string;
-  priceDiff: number;
-  profitPercent: number;
-  timestamp: Date;
-  status: 'active' | 'executed' | 'expired';
-}
+import { ArbitrageOpportunity } from '@/utils/mockData';
 
 interface ArbitrageOpportunitiesProps {
   opportunities: ArbitrageOpportunity[];

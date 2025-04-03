@@ -16,7 +16,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { autoTrading, minProfit } = useTradingContext();
   const [priceData, setPriceData] = useState(generateAllPriceData());
-  const [opportunities, setOpportunities] = useState(generateArbitrageOpportunities(priceData));
+  const [opportunities, setOpportunities] = useState(generateArbitrageOpportunities(priceData, minProfit));
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
