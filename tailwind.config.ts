@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,9 +62,9 @@ export default {
           'burgundy': '#8D4B38',
           'light-burgundy': '#C6576F',
           'dark-burgundy': '#5D3A26',
-          'dark': '#F1F0FB',
-          'card': '#FFFFFF',
-          'light-card': '#F9F9F9'
+          'dark': '#1A1F2C',
+          'card': '#252D3C',
+          'light-card': '#2E384D'
         }
       },
       borderRadius: {
@@ -88,15 +89,15 @@ export default {
             height: '0'
           }
         },
-                'pulse-slow': {
-                    '0%, 100%': { opacity: '1' },
-                    '50%': { opacity: '0.5' }
-                }
+        'pulse-slow': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' }
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-                'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+        'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       }
     }
   },

@@ -1,6 +1,7 @@
+
 import psycopg2
 
-def check_timescaledb():
+def check_database():
     try:
         # Connect to PostgreSQL
         conn = psycopg2.connect(
@@ -11,48 +12,23 @@ def check_timescaledb():
         )
         cursor = conn.cursor()
         
-        # Check if TimescaleDB extension is available
-        cursor.execute("SELECT * FROM pg_available_extensions WHERE name = 'timescaledb';")
-        result = cursor.fetchone()
+        # Check if the database is available
+        cursor.execute("SELECT version();")
+        version = cursor.fetchone()
         
-        if result:
-            print("TimescaleDB extension is available.")
-            
-            # Check if the historical_prices table exists
-            cursor.execute("""
-                SELECT EXISTS (
-                    SELECT 1 
-                    FROM information_schema.tables 
-                    WHERE table_name = 'historical_prices'
-                );
-            """)
-            table_exists = cursor.fetchone()[0]
-            
-            if not table_exists:
-                # Create the historical_prices table if it does not exist
-                cursor.execute("""
-                    CREATE TABLE historical_prices (
-                        id SERIAL,
-                        price NUMERIC NOT NULL,
-                        timestamp TIMESTAMPTZ NOT NULL,
-                        PRIMARY KEY (id, timestamp)  -- Ensure timestamp is part of the primary key
-                    );
-                """)
-                print("Table 'historical_prices' created successfully.")
-            
-            # Attempt to create hypertable
-            cursor.execute("""
-                SELECT create_hypertable('historical_prices', 'timestamp', if_not_exists => TRUE);
-            """)
-            print("Hypertable created successfully.")
+        if version:
+            print("PostgreSQL database is available.")
+            print(f"Version: {version[0]}")
         else:
-            print("TimescaleDB extension is not available.")
+            print("Failed to retrieve database version.")
         
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error connecting to database: {str(e)}")
     finally:
-        cursor.close()
-        conn.close()
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
 
 if __name__ == "__main__":
-    check_timescaledb()
+    check_database()

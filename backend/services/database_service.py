@@ -25,16 +25,6 @@ class DatabaseService:
         )
         self.pg_cursor = self.pg_conn.cursor()
         
-        # TimescaleDB connection (using PostgreSQL connection)
-        self.timescale_conn = psycopg2.connect(
-            host="localhost",
-            port=5432,
-            database="timescale_db",
-            user="postgres",
-            password="root123"
-        )
-        self.timescale_cursor = self.timescale_conn.cursor()
-        
         # Redis connection for caching
         self.redis_client = redis.Redis(host="localhost", port=6379, db=0)
         
@@ -44,7 +34,6 @@ class DatabaseService:
     def reinitialize_databases(self):
         """Reinitialize the databases"""
         self._initialize_databases()
-
         
     def _initialize_databases(self):
         """Initialize database tables and indexes"""
@@ -79,48 +68,11 @@ class DatabaseService:
             )
         """)
         self.pg_conn.commit()
-        
-        # TimescaleDB tables
-        self.timescale_cursor.execute(""" 
-            CREATE TABLE IF NOT EXISTS historical_prices (
-                timestamp TIMESTAMPTZ NOT NULL,
-                symbol VARCHAR(20) NOT NULL,
-                exchange VARCHAR(50) NOT NULL,
-                price NUMERIC(20, 8) NOT NULL,
-                volume NUMERIC(20, 8)
-            )
-        """)
-
-
-        
-        # Convert to hypertable if not already
-        #try:
-        #    self.timescale_cursor.execute(""" 
-        #        SELECT create_hypertable('historical_prices', 'timestamp', FALSE, TRUE);
-        #        """)
-        #except Exception as e:
-        #    logger.error(f"Error creating hypertable: {str(e)}")
-
             
-        #self.timescale_conn.commit()
-        
     def save_ticker(self, ticker_data):
-        """Save ticker data to MongoDB and TimescaleDB"""
+        """Save ticker data to MongoDB"""
         # Save to MongoDB for real-time access
         self.prices_collection.insert_one(ticker_data)
-        
-        # Save to TimescaleDB for historical analysis
-        self.timescale_cursor.execute("""
-            INSERT INTO historical_prices (timestamp, symbol, exchange, price, volume)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (
-            datetime.fromisoformat(ticker_data['timestamp']),
-            ticker_data['symbol'],
-            ticker_data['exchange'],
-            ticker_data['last'],
-            ticker_data['volume']
-        ))
-        self.timescale_conn.commit()
         
         # Update Redis cache for fast access
         cache_key = f"price:{ticker_data['exchange']}:{ticker_data['symbol']}"
@@ -161,25 +113,29 @@ class DatabaseService:
         return prices
         
     def get_historical_prices(self, exchange, symbol, days=7):
-        """Get historical price data from TimescaleDB"""
-        self.timescale_cursor.execute("""
-            SELECT timestamp, price, volume
-            FROM historical_prices
-            WHERE exchange = %s AND symbol = %s AND timestamp > NOW() - INTERVAL %s DAY
-            ORDER BY timestamp
-        """, (exchange, symbol, days))
+        """Get historical price data from MongoDB"""
+        # Get data from the past N days
+        start_date = datetime.now() - timedelta(days=days)
         
-        results = self.timescale_cursor.fetchall()
+        query = {
+            'exchange': exchange,
+            'symbol': symbol,
+            'timestamp': {'$gte': start_date.isoformat()}
+        }
+        
+        cursor = self.prices_collection.find(
+            query,
+            sort=[("timestamp", pymongo.ASCENDING)]
+        )
         
         # Format as list of dictionaries
-        history = [
-            {
-                'timestamp': ts.isoformat(),
-                'price': float(price),
-                'volume': float(volume) if volume else None
-            }
-            for ts, price, volume in results
-        ]
+        history = []
+        for doc in cursor:
+            history.append({
+                'timestamp': doc['timestamp'],
+                'price': float(doc['last']),
+                'volume': float(doc['volume']) if 'volume' in doc else None
+            })
         
         return history
         

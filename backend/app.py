@@ -1,3 +1,4 @@
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -26,10 +27,7 @@ exchange_service = ExchangeService(
     api_key='67ed8abd71c378000192926b',
     api_secret='8541e8aa-5b0b-4a81-b004-156359a36f44',
     api_passphrase='kucoinapicrypto'
-
 )
-
-
 
 database_service = DatabaseService()
 arbitrage_service = ArbitrageService(database_service)
