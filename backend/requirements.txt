@@ -1,21 +1,40 @@
-
-Flask==2.2.3
-Flask-Cors==3.0.10
+ccxt
+backoff
 Flask-SocketIO==5.3.2
-pymongo==4.3.3
-psycopg2-binary==2.9.5
+pymongo>=4.5.0  # Ensure compatibility with Python 3.12
+psycopg2-binary==2.9.9  # Updated version for better stability
 redis==4.5.1
-pandas==1.5.3
-numpy==1.24.2
-scikit-learn==1.2.2
-ccxt==3.0.74
-websockets==10.4
+pandas>=1.5.3, <2.0.0  # Prevent breaking changes from Pandas 2.0+
+numpy>=1.24.2
+scikit-learn>=1.2.2, <1.4.0  # Avoid future breaking changes
+ccxt>=3.0.74  # Latest version preferred
+websockets>=10.4
 python-socketio==5.7.2
 python-engineio==4.3.4
-eventlet==0.33.3
-joblib==1.2.0
+eventlet>=0.33.3, <0.34.0  # Prevent issues with Flask-SocketIO
+joblib>=1.2.0
 ta-lib==0.4.25
-matplotlib==3.7.1
-seaborn==0.12.2
-tensorflow==2.12.0
-tqdm==4.65.0
+matplotlib>=3.7.1
+seaborn>=0.12.2
+tensorflow  # Removed specific version to allow for latest compatible version
+tqdm>=4.65.0
+
+Flask-SocketIO==5.3.2
+pymongo>=4.5.0  # Ensure compatibility with Python 3.12
+psycopg2-binary==2.9.9  # Updated version for better stability
+redis==4.5.1
+pandas>=1.5.3, <2.0.0  # Prevent breaking changes from Pandas 2.0+
+numpy>=1.24.2
+scikit-learn>=1.2.2, <1.4.0  # Avoid future breaking changes
+ccxt>=3.0.74  # Latest version preferred
+websockets>=10.4
+python-socketio==5.7.2
+python-engineio==4.3.4
+eventlet>=0.33.3, <0.34.0  # Prevent issues with Flask-SocketIO
+joblib>=1.2.0
+ta-lib==0.4.25
+matplotlib>=3.7.1
+seaborn>=0.12.2
+tensorflow  # Removed specific version to allow for latest compatible version
+
+tqdm>=4.65.0

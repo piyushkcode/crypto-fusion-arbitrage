@@ -1,4 +1,3 @@
-
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -23,7 +22,15 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize services
-exchange_service = ExchangeService()
+exchange_service = ExchangeService(
+    api_key='67ed8abd71c378000192926b',
+    api_secret='8541e8aa-5b0b-4a81-b004-156359a36f44',
+    api_passphrase='kucoinapicrypto'
+
+)
+
+
+
 database_service = DatabaseService()
 arbitrage_service = ArbitrageService(database_service)
 prediction_service = PredictionService()
@@ -41,7 +48,11 @@ def handle_disconnect():
 @app.route('/api/exchanges', methods=['GET'])
 def get_exchanges():
     """Get list of supported exchanges"""
-    return jsonify(exchange_service.get_supported_exchanges())
+    try:
+        return jsonify(exchange_service.get_supported_exchanges())
+    except Exception as e:
+        logger.error(f"Error fetching exchanges: {str(e)}")
+        return jsonify({'error': 'Failed to fetch exchanges'}), 500
 
 @app.route('/api/pairs', methods=['GET'])
 def get_pairs():
@@ -54,8 +65,12 @@ def get_prices():
     exchange = request.args.get('exchange', 'all')
     pair = request.args.get('pair', 'BTC/USDT')
     
-    prices = database_service.get_latest_prices(exchange, pair)
-    return jsonify(prices)
+    try:
+        prices = database_service.get_latest_prices(exchange, pair)
+        return jsonify(prices)
+    except Exception as e:
+        logger.error(f"Error fetching prices: {str(e)}")
+        return jsonify({'error': 'Failed to fetch prices'}), 500
 
 @app.route('/api/opportunities', methods=['GET'])
 def get_opportunities():
@@ -63,8 +78,12 @@ def get_opportunities():
     min_profit = float(request.args.get('min_profit', 0.5))
     pair = request.args.get('pair', 'all')
     
-    opportunities = arbitrage_service.find_opportunities(min_profit, pair)
-    return jsonify(opportunities)
+    try:
+        opportunities = arbitrage_service.find_opportunities(min_profit, pair)
+        return jsonify(opportunities)
+    except Exception as e:
+        logger.error(f"Error fetching opportunities: {str(e)}")
+        return jsonify({'error': 'Failed to fetch opportunities'}), 500
 
 @app.route('/api/predictions', methods=['GET'])
 def get_predictions():
@@ -106,8 +125,5 @@ def get_historical():
     return jsonify(data)
 
 if __name__ == '__main__':
-    # Start data collection service
-    exchange_service.start_data_collection()
-    
     # Start the Flask app with SocketIO
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)

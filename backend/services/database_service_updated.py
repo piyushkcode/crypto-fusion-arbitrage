@@ -1,4 +1,3 @@
-
 import logging
 import pymongo
 import psycopg2
@@ -6,13 +5,16 @@ import redis
 import json
 from datetime import datetime, timedelta
 import pandas as pd
+import os  # Import os for environment variables
 
 logger = logging.getLogger(__name__)
 
 class DatabaseService:
     def __init__(self):
         # MongoDB connection for real-time price data
-        self.mongo_client = pymongo.MongoClient("mongodb+srv://pkinekar2004:root1234@cluster0.uwapo.mongodb.net/")
+        self.mongo_client = pymongo.MongoClient(
+            f"mongodb://{os.getenv('MONGO_USER')}:{os.getenv('MONGO_PASSWORD')}@localhost:27017/"
+        )
         self.mongo_db = self.mongo_client["crypto_arbitrage"]
         self.prices_collection = self.mongo_db["live_prices"]
         
@@ -40,11 +42,6 @@ class DatabaseService:
         
         # Initialize database tables/collections
         self._initialize_databases()
-
-    def reinitialize_databases(self):
-        """Reinitialize the databases"""
-        self._initialize_databases()
-
         
     def _initialize_databases(self):
         """Initialize database tables and indexes"""
@@ -53,7 +50,7 @@ class DatabaseService:
         self.prices_collection.create_index("timestamp")
         
         # PostgreSQL tables
-        self.pg_cursor.execute("""
+        self.pg_cursor.execute(""" 
             CREATE TABLE IF NOT EXISTS users (
                 user_id UUID PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -63,7 +60,7 @@ class DatabaseService:
             )
         """)
         
-        self.pg_cursor.execute("""
+        self.pg_cursor.execute(""" 
             CREATE TABLE IF NOT EXISTS arbitrage_trades (
                 trade_id UUID PRIMARY KEY,
                 user_id UUID REFERENCES users(user_id),
@@ -90,19 +87,16 @@ class DatabaseService:
                 volume NUMERIC(20, 8)
             )
         """)
-
-
         
         # Convert to hypertable if not already
-        #try:
-        #    self.timescale_cursor.execute(""" 
-        #        SELECT create_hypertable('historical_prices', 'timestamp', FALSE, TRUE);
-        #        """)
-        #except Exception as e:
-        #    logger.error(f"Error creating hypertable: {str(e)}")
-
+        try:
+            self.timescale_cursor.execute(""" 
+                SELECT create_hypertable('historical_prices', 'timestamp', if_not_exists => TRUE)
+            """)
+        except Exception as e:
+            logger.error(f"Error creating hypertable: {str(e)}")
             
-        #self.timescale_conn.commit()
+        self.timescale_conn.commit()
         
     def save_ticker(self, ticker_data):
         """Save ticker data to MongoDB and TimescaleDB"""
@@ -110,7 +104,7 @@ class DatabaseService:
         self.prices_collection.insert_one(ticker_data)
         
         # Save to TimescaleDB for historical analysis
-        self.timescale_cursor.execute("""
+        self.timescale_cursor.execute(""" 
             INSERT INTO historical_prices (timestamp, symbol, exchange, price, volume)
             VALUES (%s, %s, %s, %s, %s)
         """, (
@@ -162,7 +156,7 @@ class DatabaseService:
         
     def get_historical_prices(self, exchange, symbol, days=7):
         """Get historical price data from TimescaleDB"""
-        self.timescale_cursor.execute("""
+        self.timescale_cursor.execute(""" 
             SELECT timestamp, price, volume
             FROM historical_prices
             WHERE exchange = %s AND symbol = %s AND timestamp > NOW() - INTERVAL %s DAY
@@ -209,7 +203,7 @@ class DatabaseService:
         
     def save_trade(self, trade_data):
         """Save executed trade to PostgreSQL"""
-        self.pg_cursor.execute("""
+        self.pg_cursor.execute(""" 
             INSERT INTO arbitrage_trades (
                 trade_id, user_id, symbol, buy_exchange, sell_exchange,
                 buy_price, sell_price, amount, profit, status
@@ -230,7 +224,7 @@ class DatabaseService:
         
     def get_user_trades(self, user_id):
         """Get all trades for a specific user"""
-        self.pg_cursor.execute("""
+        self.pg_cursor.execute(""" 
             SELECT * FROM arbitrage_trades
             WHERE user_id = %s
             ORDER BY trade_timestamp DESC
