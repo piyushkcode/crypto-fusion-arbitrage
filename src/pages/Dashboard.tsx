@@ -22,22 +22,34 @@ const Dashboard = () => {
   const [arbitrageType, setArbitrageType] = useState('simple');
   const [autoTrading, setAutoTrading] = useState(false);
   const [minProfit, setMinProfit] = useState(1.0);
+  const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
 
   // Update data every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsLoading(true);
-      
-      setTimeout(() => {
-        const newPriceData = generateAllPriceData();
-        setPriceData(newPriceData);
-        setOpportunities(generateArbitrageOpportunities(newPriceData));
-        setIsLoading(false);
-      }, 500);
+      refreshData();
     }, 10000);
 
     return () => clearInterval(interval);
   }, []);
+
+  // Function to manually refresh data
+  const refreshData = () => {
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      const newPriceData = generateAllPriceData();
+      setPriceData(newPriceData);
+      setOpportunities(generateArbitrageOpportunities(newPriceData));
+      setLastUpdateTime(new Date());
+      setIsLoading(false);
+      
+      toast({
+        title: "Data Refreshed",
+        description: "Latest market data has been loaded",
+      });
+    }, 500);
+  };
 
   // Handle arbitrage type change
   const handleArbitrageTypeChange = (type: string) => {
@@ -67,6 +79,17 @@ const Dashboard = () => {
     ? (opportunities.reduce((sum, opp) => sum + opp.profitPercent, 0) / opportunities.length).toFixed(2) 
     : '0.00';
   const mostActivePairs = getMostActivePairs(priceData);
+
+  // Format the last update time
+  const formatLastUpdateTime = () => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - lastUpdateTime.getTime()) / 1000);
+    
+    if (diffInSeconds < 5) return "Just now";
+    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  };
 
   return (
     <div className="min-h-screen bg-crypto-dark text-white">
@@ -99,11 +122,21 @@ const Dashboard = () => {
               icon={<Zap className="h-5 w-5 text-crypto-yellow" />}
               trend={{ value: 0.5, isPositive: true }}
             />
-            <StatsCard 
-              title="Last Update" 
-              value="Just now" 
-              icon={<RefreshCw className={`h-5 w-5 text-crypto-burgundy ${isLoading ? "animate-spin" : ""}`} />}
-            />
+            <div 
+              onClick={refreshData}
+              className="grid-item cursor-pointer hover:bg-crypto-light-card/70 transition-colors"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-medium text-gray-400">Last Update</h3>
+                <RefreshCw className={`h-5 w-5 text-crypto-burgundy ${isLoading ? "animate-spin" : ""}`} />
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-bold">{formatLastUpdateTime()}</p>
+                <div className="text-xs bg-crypto-light-card text-gray-300 px-2 py-1 rounded">
+                  {isLoading ? "Refreshing..." : "Click to refresh"}
+                </div>
+              </div>
+            </div>
           </div>
           
           {/* Main content grid */}
