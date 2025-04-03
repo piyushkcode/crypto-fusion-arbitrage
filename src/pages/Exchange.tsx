@@ -1,45 +1,32 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { cryptoPairs, exchanges } from '@/utils/mockData';
+import { useToast } from '@/hooks/use-toast';
 
 const Exchange = () => {
   const { toast } = useToast();
-  const [exchanges, setExchanges] = React.useState([
-    { name: 'Binance', connected: true, apiKey: '•••••••••••••••••' },
-    { name: 'Coinbase', connected: false, apiKey: '' },
-    { name: 'Kraken', connected: false, apiKey: '' },
-    { name: 'KuCoin', connected: true, apiKey: '•••••••••••••••••' },
-    { name: 'Bybit', connected: false, apiKey: '' },
-  ]);
-
-  const handleConnect = (index: number) => {
-    const newExchanges = [...exchanges];
-    newExchanges[index].connected = true;
-    newExchanges[index].apiKey = '•••••••••••••••••';
-    setExchanges(newExchanges);
+  const [selectedPair, setSelectedPair] = useState('BTC/USDT');
+  const [selectedExchange, setSelectedExchange] = useState('Binance');
+  const [amount, setAmount] = useState('');
+  
+  const handleExchange = (type: 'buy' | 'sell') => {
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount to exchange",
+        variant: "destructive",
+      });
+      return;
+    }
     
     toast({
-      title: `Connected to ${exchanges[index].name}`,
-      description: "API keys saved securely",
-    });
-  };
-
-  const handleDisconnect = (index: number) => {
-    const newExchanges = [...exchanges];
-    newExchanges[index].connected = false;
-    newExchanges[index].apiKey = '';
-    setExchanges(newExchanges);
-    
-    toast({
-      title: `Disconnected from ${exchanges[index].name}`,
-      description: "API keys have been removed",
-      variant: "destructive",
+      title: type === 'buy' ? "Buy Order Placed" : "Sell Order Placed",
+      description: `${type === 'buy' ? 'Buying' : 'Selling'} ${amount} ${selectedPair.split('/')[0]} on ${selectedExchange}`,
     });
   };
 
@@ -50,72 +37,94 @@ const Exchange = () => {
         <Sidebar />
         <main className="flex-1 p-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">Exchange Connections</h1>
-            <p className="text-gray-400">Manage your exchange API connections</p>
+            <h1 className="text-2xl font-bold mb-2">Exchange</h1>
+            <p className="text-gray-400">Buy and sell cryptocurrencies across exchanges</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {exchanges.map((exchange, index) => (
-              <Card key={exchange.name} className="bg-crypto-card border-gray-800">
-                <CardHeader>
-                  <CardTitle className="text-lg font-medium text-white">{exchange.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {exchange.connected ? (
-                      <>
-                        <div className="bg-crypto-light-card/30 p-4 rounded-lg space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-400">Status</span>
-                            <span className="text-sm text-crypto-green">Connected</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-400">API Key</span>
-                            <span className="text-sm text-white">{exchange.apiKey}</span>
-                          </div>
-                        </div>
-                        
-                        <Button 
-                          variant="destructive" 
-                          className="w-full"
-                          onClick={() => handleDisconnect(index)}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-crypto-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-lg font-medium text-white">Exchange Interface</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Select Exchange</label>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {exchanges.map(exchange => (
+                        <button
+                          key={exchange}
+                          onClick={() => setSelectedExchange(exchange)}
+                          className={`px-3 py-1 rounded-full text-sm ${
+                            selectedExchange === exchange 
+                              ? 'bg-crypto-burgundy text-white' 
+                              : 'bg-crypto-light-card/30 text-gray-300 hover:bg-crypto-light-card/50'
+                          }`}
                         >
-                          Disconnect
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${exchange.name}-api-key`}>API Key</Label>
-                          <Input 
-                            id={`${exchange.name}-api-key`}
-                            placeholder="Enter API key"
-                            className="bg-crypto-light-card/30 border-gray-700"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`${exchange.name}-api-secret`}>API Secret</Label>
-                          <Input 
-                            id={`${exchange.name}-api-secret`}
-                            type="password"
-                            placeholder="Enter API secret"
-                            className="bg-crypto-light-card/30 border-gray-700"
-                          />
-                        </div>
-                        
-                        <Button 
-                          className="w-full bg-crypto-burgundy hover:bg-crypto-light-burgundy"
-                          onClick={() => handleConnect(index)}
-                        >
-                          Connect
-                        </Button>
-                      </>
-                    )}
+                          {exchange}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Trading Pair</label>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {cryptoPairs.map(pair => (
+                        <button
+                          key={pair}
+                          onClick={() => setSelectedPair(pair)}
+                          className={`px-3 py-1 rounded-full text-sm ${
+                            selectedPair === pair 
+                              ? 'bg-crypto-burgundy text-white' 
+                              : 'bg-crypto-light-card/30 text-gray-300 hover:bg-crypto-light-card/50'
+                          }`}
+                        >
+                          {pair}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Amount</label>
+                    <Input
+                      type="number"
+                      placeholder={`Amount in ${selectedPair.split('/')[0]}`}
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="bg-crypto-light-card/30 border-gray-700 text-white"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-4 pt-4">
+                    <Button 
+                      className="flex-1 bg-crypto-green hover:bg-crypto-green/80"
+                      onClick={() => handleExchange('buy')}
+                    >
+                      Buy
+                    </Button>
+                    <Button 
+                      className="flex-1 bg-crypto-burgundy hover:bg-crypto-burgundy/80"
+                      onClick={() => handleExchange('sell')}
+                    >
+                      Sell
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-crypto-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-lg font-medium text-white">Order History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center text-gray-400 py-16">
+                  No order history available. Place your first order to see it here.
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>

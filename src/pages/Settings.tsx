@@ -4,24 +4,17 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
   const { toast } = useToast();
-  const [notifications, setNotifications] = React.useState(true);
-  const [autoTrading, setAutoTrading] = React.useState(false);
-  const [darkMode, setDarkMode] = React.useState(true);
-  const [email, setEmail] = React.useState('user@example.com');
-  const [minProfit, setMinProfit] = React.useState('1.0');
-
+  
   const handleSaveSettings = () => {
     toast({
       title: "Settings Saved",
-      description: "Your preferences have been updated",
+      description: "Your settings have been updated successfully",
     });
   };
 
@@ -32,143 +25,162 @@ const Settings = () => {
         <Sidebar />
         <main className="flex-1 p-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">Account Settings</h1>
-            <p className="text-gray-400">Manage your account preferences</p>
+            <h1 className="text-2xl font-bold mb-2">Settings</h1>
+            <p className="text-gray-400">Configure your application preferences</p>
           </div>
           
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="bg-crypto-card border-gray-800">
               <CardHeader>
-                <CardTitle className="text-lg font-medium text-white">Settings</CardTitle>
+                <CardTitle className="text-lg font-medium text-white">Account Settings</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="general" className="w-full">
-                  <TabsList className="grid grid-cols-4 w-full bg-crypto-light-card/30">
-                    <TabsTrigger 
-                      value="general" 
-                      className="data-[state=active]:bg-crypto-burgundy data-[state=active]:text-white"
-                    >
-                      General
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="trading"
-                      className="data-[state=active]:bg-crypto-burgundy data-[state=active]:text-white"
-                    >
-                      Trading
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="notifications"
-                      className="data-[state=active]:bg-crypto-burgundy data-[state=active]:text-white"
-                    >
-                      Notifications
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="security"
-                      className="data-[state=active]:bg-crypto-burgundy data-[state=active]:text-white"
-                    >
-                      Security
-                    </TabsTrigger>
-                  </TabsList>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Username</label>
+                    <Input
+                      defaultValue="user123"
+                      className="bg-crypto-light-card/30 border-gray-700 text-white"
+                    />
+                  </div>
                   
-                  <TabsContent value="general" className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input 
-                        id="email" 
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="bg-crypto-light-card/30 border-gray-700" 
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="dark-mode">Dark Mode</Label>
-                      </div>
-                      <Switch 
-                        id="dark-mode" 
-                        checked={darkMode} 
-                        onCheckedChange={setDarkMode}
-                        className="data-[state=checked]:bg-crypto-burgundy"
-                      />
-                    </div>
-                  </TabsContent>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
+                    <Input
+                      defaultValue="user@example.com"
+                      className="bg-crypto-light-card/30 border-gray-700 text-white"
+                    />
+                  </div>
                   
-                  <TabsContent value="trading" className="space-y-4 mt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="auto-trading">Automated Trading</Label>
-                      </div>
-                      <Switch 
-                        id="auto-trading" 
-                        checked={autoTrading} 
-                        onCheckedChange={setAutoTrading}
-                        className="data-[state=checked]:bg-crypto-burgundy"
-                      />
+                  <div>
+                    <Button 
+                      className="bg-crypto-burgundy hover:bg-crypto-burgundy/80"
+                      onClick={handleSaveSettings}
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-crypto-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-lg font-medium text-white">Notification Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Email Notifications</p>
+                      <p className="text-sm text-gray-400">Receive email alerts for important events</p>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="min-profit">Minimum Profit Threshold (%)</Label>
-                      <Input 
-                        id="min-profit" 
-                        value={minProfit}
-                        onChange={e => setMinProfit(e.target.value)}
-                        className="bg-crypto-light-card/30 border-gray-700" 
-                      />
-                    </div>
-                  </TabsContent>
+                    <Switch defaultChecked />
+                  </div>
                   
-                  <TabsContent value="notifications" className="space-y-4 mt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="notifications">Email Notifications</Label>
-                      </div>
-                      <Switch 
-                        id="notifications" 
-                        checked={notifications} 
-                        onCheckedChange={setNotifications}
-                        className="data-[state=checked]:bg-crypto-burgundy"
-                      />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Push Notifications</p>
+                      <p className="text-sm text-gray-400">Receive browser notifications</p>
                     </div>
-                  </TabsContent>
+                    <Switch defaultChecked />
+                  </div>
                   
-                  <TabsContent value="security" className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="current-password">Current Password</Label>
-                      <Input 
-                        id="current-password" 
-                        type="password"
-                        className="bg-crypto-light-card/30 border-gray-700" 
-                      />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Price Alerts</p>
+                      <p className="text-sm text-gray-400">Get notified about significant price changes</p>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <Input 
-                        id="new-password" 
-                        type="password"
-                        className="bg-crypto-light-card/30 border-gray-700" 
-                      />
+                    <Switch defaultChecked />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Arbitrage Opportunities</p>
+                      <p className="text-sm text-gray-400">Get notified about new arbitrage opportunities</p>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm New Password</Label>
-                      <Input 
-                        id="confirm-password" 
-                        type="password"
-                        className="bg-crypto-light-card/30 border-gray-700" 
-                      />
+                    <Switch defaultChecked />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-crypto-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-lg font-medium text-white">API Keys</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Binance API Key</label>
+                    <Input
+                      type="password"
+                      defaultValue="••••••••••••••••••••"
+                      className="bg-crypto-light-card/30 border-gray-700 text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Binance API Secret</label>
+                    <Input
+                      type="password"
+                      defaultValue="••••••••••••••••••••"
+                      className="bg-crypto-light-card/30 border-gray-700 text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Button 
+                      className="bg-crypto-burgundy hover:bg-crypto-burgundy/80"
+                      onClick={handleSaveSettings}
+                    >
+                      Save API Keys
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-crypto-card border-gray-800">
+              <CardHeader>
+                <CardTitle className="text-lg font-medium text-white">Trading Preferences</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Auto Trading</p>
+                      <p className="text-sm text-gray-400">Automatically execute trades based on strategies</p>
                     </div>
-                  </TabsContent>
-                </Tabs>
-                
-                <div className="pt-6">
-                  <Button 
-                    onClick={handleSaveSettings}
-                    className="bg-crypto-burgundy hover:bg-crypto-light-burgundy"
-                  >
-                    Save Settings
-                  </Button>
+                    <Switch />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Default Trading Amount (USDT)</label>
+                    <Input
+                      type="number"
+                      defaultValue="100"
+                      className="bg-crypto-light-card/30 border-gray-700 text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Minimum Profit Threshold (%)</label>
+                    <Input
+                      type="number"
+                      defaultValue="1.0"
+                      className="bg-crypto-light-card/30 border-gray-700 text-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Button 
+                      className="bg-crypto-burgundy hover:bg-crypto-burgundy/80"
+                      onClick={handleSaveSettings}
+                    >
+                      Save Preferences
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

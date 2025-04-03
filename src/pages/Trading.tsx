@@ -1,24 +1,18 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import TradingSettings from '@/components/TradingSettings';
 import { cryptoPairs } from '@/utils/mockData';
+import { useToast } from '@/hooks/use-toast';
 
 const Trading = () => {
   const { toast } = useToast();
-  const [autoTrading, setAutoTrading] = React.useState(false);
-  const [minProfit, setMinProfit] = React.useState('1.0');
-  const [selectedPair, setSelectedPair] = React.useState('BTC/USDT');
-  const [tradeAmount, setTradeAmount] = React.useState('0.01');
-
+  const [autoTrading, setAutoTrading] = useState(false);
+  const [minProfit, setMinProfit] = useState(1.0);
+  const [selectedPair, setSelectedPair] = useState('BTC/USDT');
+  
   const handleAutoTradingChange = (enabled: boolean) => {
     setAutoTrading(enabled);
     toast({
@@ -38,134 +32,82 @@ const Trading = () => {
             <p className="text-gray-400">Configure and monitor your trading activities</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-crypto-card border-gray-800 col-span-2">
-              <CardHeader>
-                <CardTitle className="text-lg font-medium text-white">Trading Configuration</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="auto" className="w-full">
-                  <TabsList className="grid grid-cols-2 w-full bg-crypto-light-card/30">
-                    <TabsTrigger 
-                      value="auto" 
-                      className="data-[state=active]:bg-crypto-burgundy data-[state=active]:text-white"
-                    >
-                      Automated Trading
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="manual"
-                      className="data-[state=active]:bg-crypto-burgundy data-[state=active]:text-white"
-                    >
-                      Manual Trading
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="auto" className="space-y-4 mt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="auto-trading">Automated Trading Bot</Label>
-                      </div>
-                      <Switch 
-                        id="auto-trading" 
-                        checked={autoTrading} 
-                        onCheckedChange={handleAutoTradingChange}
-                        className="data-[state=checked]:bg-crypto-burgundy"
-                      />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              {/* Trading Settings */}
+              <div className="space-y-6">
+                <Card className="bg-crypto-card border-gray-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg font-medium text-white">Trading Pair</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {cryptoPairs.map(pair => (
+                        <button
+                          key={pair}
+                          onClick={() => setSelectedPair(pair)}
+                          className={`px-3 py-1 rounded-full text-sm ${
+                            selectedPair === pair 
+                              ? 'bg-crypto-burgundy text-white' 
+                              : 'bg-crypto-light-card/30 text-gray-300 hover:bg-crypto-light-card/50'
+                          }`}
+                        >
+                          {pair}
+                        </button>
+                      ))}
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="min-profit">Minimum Profit Threshold (%)</Label>
-                      <Input 
-                        id="min-profit"
-                        value={minProfit} 
-                        onChange={e => setMinProfit(e.target.value)}
-                        className="bg-crypto-light-card/30 border-gray-700"
-                      />
-                    </div>
-                    
-                    <div className="pt-4">
-                      <Button 
-                        className="w-full bg-crypto-burgundy hover:bg-crypto-light-burgundy"
-                      >
-                        {autoTrading ? 'Update Bot Configuration' : 'Activate Trading Bot'}
-                      </Button>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="manual" className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="pair">Trading Pair</Label>
-                      <Select value={selectedPair} onValueChange={setSelectedPair}>
-                        <SelectTrigger className="bg-crypto-light-card/30 border-gray-700">
-                          <SelectValue placeholder="Select a trading pair" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-crypto-card border-gray-700">
-                          {cryptoPairs.map(pair => (
-                            <SelectItem key={pair} value={pair}>{pair}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="trade-amount">Trade Amount</Label>
-                      <Input 
-                        id="trade-amount" 
-                        value={tradeAmount}
-                        onChange={e => setTradeAmount(e.target.value)}
-                        className="bg-crypto-light-card/30 border-gray-700" 
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 pt-4">
-                      <Button 
-                        className="w-full bg-crypto-green hover:bg-crypto-green/80"
-                      >
-                        Buy
-                      </Button>
-                      <Button 
-                        className="w-full bg-crypto-red hover:bg-crypto-red/80"
-                      >
-                        Sell
-                      </Button>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+                
+                <TradingSettings 
+                  autoTrading={autoTrading}
+                  onAutoTradingChange={handleAutoTradingChange}
+                  minProfit={minProfit}
+                  onMinProfitChange={setMinProfit}
+                />
+              </div>
+            </div>
             
-            <Card className="bg-crypto-card border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-lg font-medium text-white">Trading Stats</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-crypto-light-card/30 p-4 rounded-lg">
-                    <h3 className="text-sm text-gray-400 mb-1">Total Trades</h3>
-                    <p className="text-2xl font-bold text-white">24</p>
+            <div className="lg:col-span-2">
+              {/* Trading Overview */}
+              <Card className="bg-crypto-card border-gray-800 mb-6">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-medium text-white">Trading Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-crypto-light-card/30 p-4 rounded">
+                      <p className="text-sm text-gray-400">Trading Balance</p>
+                      <p className="text-2xl font-bold">$10,000.00</p>
+                    </div>
+                    <div className="bg-crypto-light-card/30 p-4 rounded">
+                      <p className="text-sm text-gray-400">Active Trades</p>
+                      <p className="text-2xl font-bold">0</p>
+                    </div>
+                    <div className="bg-crypto-light-card/30 p-4 rounded">
+                      <p className="text-sm text-gray-400">Total Profit</p>
+                      <p className="text-2xl font-bold text-crypto-green">$0.00</p>
+                    </div>
+                    <div className="bg-crypto-light-card/30 p-4 rounded">
+                      <p className="text-sm text-gray-400">Win Rate</p>
+                      <p className="text-2xl font-bold">0%</p>
+                    </div>
                   </div>
-                  
-                  <div className="bg-crypto-light-card/30 p-4 rounded-lg">
-                    <h3 className="text-sm text-gray-400 mb-1">Average Profit</h3>
-                    <p className="text-2xl font-bold text-crypto-green">1.8%</p>
+                </CardContent>
+              </Card>
+              
+              {/* Recent Trades */}
+              <Card className="bg-crypto-card border-gray-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-medium text-white">Recent Trades</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center text-gray-400 py-8">
+                    No trades have been executed yet. Configure your settings and enable auto-trading to begin.
                   </div>
-                  
-                  <div className="bg-crypto-light-card/30 p-4 rounded-lg">
-                    <h3 className="text-sm text-gray-400 mb-1">Successful Trades</h3>
-                    <p className="text-2xl font-bold text-white">21 <span className="text-sm text-crypto-green">(87.5%)</span></p>
-                  </div>
-                  
-                  <div className="pt-4">
-                    <Button 
-                      variant="outline" 
-                      className="w-full text-gray-300 border-gray-700 hover:bg-crypto-light-card/50"
-                    >
-                      View Trade History
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </main>
       </div>
