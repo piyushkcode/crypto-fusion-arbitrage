@@ -38,7 +38,12 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
   return (
     <Card className="bg-crypto-card border-gray-800">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium text-white">Arbitrage Opportunities</CardTitle>
+        <CardTitle className="flex items-center justify-between text-lg font-medium text-white">
+          <span>Arbitrage Opportunities</span>
+          <Badge variant="outline" className="bg-crypto-purple/20 text-crypto-purple">
+            {opportunities.length} Found
+          </Badge>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

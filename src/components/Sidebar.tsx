@@ -22,7 +22,7 @@ const Sidebar = () => {
   const location = useLocation();
   
   return (
-    <aside className="w-[200px] min-w-[70px] hidden md:block bg-crypto-card border-r border-gray-800 min-h-[calc(100vh-64px)]">
+    <aside className="w-[200px] min-w-[70px] hidden md:block bg-crypto-card border-r border-gray-800 min-h-[calc(100vh-64px)] relative">
       <div className="p-4">
         <nav className="space-y-2">
           {sidebarItems.map((item) => {
@@ -45,7 +45,7 @@ const Sidebar = () => {
           })}
         </nav>
       </div>
-      <div className="absolute bottom-4 left-4 space-y-2">
+      <div className="absolute bottom-8 left-0 w-full px-4 space-y-2">
         <Link
           to="/settings"
           className={cn(
