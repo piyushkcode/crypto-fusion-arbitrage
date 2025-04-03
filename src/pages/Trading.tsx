@@ -1,25 +1,71 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TradingSettings from '@/components/TradingSettings';
 import { cryptoPairs } from '@/utils/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { useTradingContext } from '@/contexts/TradingContext';
+import { formatDistanceToNow } from 'date-fns';
 
 const Trading = () => {
   const { toast } = useToast();
-  const [autoTrading, setAutoTrading] = useState(false);
-  const [minProfit, setMinProfit] = useState(1.0);
+  const { 
+    autoTrading, 
+    setAutoTrading, 
+    minProfit, 
+    setMinProfit, 
+    trades, 
+    addTrade,
+    balance,
+    totalProfit,
+    winRate
+  } = useTradingContext();
+  
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   
-  const handleAutoTradingChange = (enabled: boolean) => {
-    setAutoTrading(enabled);
-    toast({
-      title: enabled ? "Auto Trading Enabled" : "Auto Trading Disabled",
-      description: enabled ? "Our trading bot will execute trades automatically" : "Manual trade confirmation required",
-    });
-  };
+  // Auto trading simulation
+  useEffect(() => {
+    if (autoTrading) {
+      const interval = setInterval(() => {
+        // Random chance of finding an opportunity
+        if (Math.random() > 0.7) {
+          const profit = (Math.random() * 3) + minProfit;
+          if (profit >= minProfit) {
+            // Create a simulation of arbitrage trade
+            const buyExchange = Math.random() > 0.5 ? 'Binance' : 'Kucoin';
+            const sellExchange = buyExchange === 'Binance' ? 'Kucoin' : 'Binance';
+            const buyPrice = 60000 * (1 - (profit/200));
+            const sellPrice = 60000 * (1 + (profit/200));
+            const amount = Math.random() * 0.5 + 0.1;
+            
+            addTrade({
+              type: 'buy',
+              pair: selectedPair,
+              amount,
+              price: buyPrice,
+              exchange: buyExchange,
+              status: 'completed',
+              profit: amount * sellPrice - amount * buyPrice
+            });
+            
+            toast({
+              title: "Arbitrage Trade Executed",
+              description: `${profit.toFixed(2)}% profit on ${selectedPair} (${buyExchange} → ${sellExchange})`,
+            });
+          }
+        }
+      }, 15000); // Every 15 seconds try to execute a trade
+      
+      return () => clearInterval(interval);
+    }
+  }, [autoTrading, selectedPair, minProfit, addTrade, toast]);
+
+  // Filter recent trades for selected pair
+  const recentTrades = trades
+    .filter(trade => trade.pair === selectedPair)
+    .slice(0, 10);
 
   return (
     <div className="min-h-screen bg-crypto-dark text-white">
@@ -61,7 +107,7 @@ const Trading = () => {
                 
                 <TradingSettings 
                   autoTrading={autoTrading}
-                  onAutoTradingChange={handleAutoTradingChange}
+                  onAutoTradingChange={setAutoTrading}
                   minProfit={minProfit}
                   onMinProfitChange={setMinProfit}
                 />
@@ -78,19 +124,21 @@ const Trading = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Trading Balance</p>
-                      <p className="text-2xl font-bold">$10,000.00</p>
+                      <p className="text-2xl font-bold">${balance.toFixed(2)}</p>
                     </div>
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Active Trades</p>
-                      <p className="text-2xl font-bold">0</p>
+                      <p className="text-2xl font-bold">{trades.filter(t => t.status === 'pending').length}</p>
                     </div>
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Total Profit</p>
-                      <p className="text-2xl font-bold text-crypto-green">$0.00</p>
+                      <p className={`text-2xl font-bold ${totalProfit > 0 ? 'text-crypto-green' : totalProfit < 0 ? 'text-crypto-burgundy' : 'text-white'}`}>
+                        ${totalProfit.toFixed(2)}
+                      </p>
                     </div>
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Win Rate</p>
-                      <p className="text-2xl font-bold">0%</p>
+                      <p className="text-2xl font-bold">{winRate.toFixed(0)}%</p>
                     </div>
                   </div>
                 </CardContent>
@@ -102,9 +150,44 @@ const Trading = () => {
                   <CardTitle className="text-lg font-medium text-white">Recent Trades</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center text-gray-400 py-8">
-                    No trades have been executed yet. Configure your settings and enable auto-trading to begin.
-                  </div>
+                  {recentTrades.length > 0 ? (
+                    <div className="space-y-3">
+                      {recentTrades.map((trade) => (
+                        <div key={trade.id} className="bg-crypto-light-card/30 p-3 rounded-md">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center">
+                              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                                trade.type === 'buy' ? 'bg-crypto-green/20 text-crypto-green' : 'bg-crypto-burgundy/20 text-crypto-burgundy'
+                              }`}>
+                                {trade.type.toUpperCase()}
+                              </span>
+                              <span className="ml-2 font-medium">{trade.pair}</span>
+                            </div>
+                            <div className="text-sm text-gray-400">
+                              {formatDistanceToNow(trade.timestamp, { addSuffix: true })}
+                            </div>
+                          </div>
+                          <div className="mt-2 flex justify-between text-sm">
+                            <div>
+                              <span className="text-gray-500">Amount:</span> {trade.amount.toFixed(6)}
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Price:</span> ${trade.price.toFixed(2)}
+                            </div>
+                            {trade.profit !== undefined && (
+                              <div className={trade.profit > 0 ? 'text-crypto-green' : 'text-crypto-burgundy'}>
+                                ${trade.profit.toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-400 py-8">
+                      No trades have been executed yet. Configure your settings and enable auto-trading to begin.
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

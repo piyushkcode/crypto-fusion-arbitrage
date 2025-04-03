@@ -6,30 +6,29 @@ import StatsCard from '@/components/StatsCard';
 import PriceTable from '@/components/PriceTable';
 import ArbitrageOpportunities from '@/components/ArbitrageOpportunities';
 import PriceComparisonChart from '@/components/PriceComparisonChart';
-import ArbitrageType from '@/components/ArbitrageType';
-import TradingSettings from '@/components/TradingSettings';
 import { Activity, TrendingUp, Zap, RefreshCw } from 'lucide-react';
-import { generateAllPriceData, generateArbitrageOpportunities, getMostActivePairs, cryptoPairs } from '@/utils/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useTradingContext } from '@/contexts/TradingContext';
+import { generateAllPriceData, generateArbitrageOpportunities, getMostActivePairs, cryptoPairs } from '@/utils/mockData';
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const { autoTrading, minProfit } = useTradingContext();
   const [priceData, setPriceData] = useState(generateAllPriceData());
   const [opportunities, setOpportunities] = useState(generateArbitrageOpportunities(priceData));
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [isLoading, setIsLoading] = useState(false);
-  const [arbitrageType, setArbitrageType] = useState('simple');
-  const [autoTrading, setAutoTrading] = useState(false);
-  const [minProfit, setMinProfit] = useState(1.0);
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
+  const [supportedPairs, setSupportedPairs] = useState(cryptoPairs);
+  const [mostActivePairs, setMostActivePairs] = useState(getMostActivePairs(priceData));
 
   // Update data every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       refreshData();
     }, 10000);
-
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -40,7 +39,8 @@ const Dashboard = () => {
     setTimeout(() => {
       const newPriceData = generateAllPriceData();
       setPriceData(newPriceData);
-      setOpportunities(generateArbitrageOpportunities(newPriceData));
+      setOpportunities(generateArbitrageOpportunities(newPriceData, minProfit));
+      setMostActivePairs(getMostActivePairs(newPriceData));
       setLastUpdateTime(new Date());
       setIsLoading(false);
       
@@ -49,24 +49,6 @@ const Dashboard = () => {
         description: "Latest market data has been loaded",
       });
     }, 500);
-  };
-
-  // Handle arbitrage type change
-  const handleArbitrageTypeChange = (type: string) => {
-    setArbitrageType(type);
-    toast({
-      title: "Strategy Changed",
-      description: `Switched to ${type} arbitrage strategy`,
-    });
-  };
-
-  // Handle auto trading change
-  const handleAutoTradingChange = (enabled: boolean) => {
-    setAutoTrading(enabled);
-    toast({
-      title: enabled ? "Auto Trading Enabled" : "Auto Trading Disabled",
-      description: enabled ? "Our trading bot will execute trades automatically" : "Manual trade confirmation required",
-    });
   };
 
   // Filter price data for the selected pair
@@ -78,7 +60,6 @@ const Dashboard = () => {
   const avgProfit = opportunities.length 
     ? (opportunities.reduce((sum, opp) => sum + opp.profitPercent, 0) / opportunities.length).toFixed(2) 
     : '0.00';
-  const mostActivePairs = getMostActivePairs(priceData);
 
   // Format the last update time
   const formatLastUpdateTime = () => {
@@ -98,7 +79,7 @@ const Dashboard = () => {
         <Sidebar />
         <main className="flex-1 p-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">CryptoVantage Dashboard</h1>
+            <h1 className="text-2xl font-bold mb-2">Arbitrage Dashboard</h1>
             <p className="text-gray-400">Monitor real-time prices and arbitrage opportunities</p>
           </div>
           
@@ -128,7 +109,7 @@ const Dashboard = () => {
             >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-medium text-gray-400">Last Update</h3>
-                <RefreshCw className={`h-5 w-5 text-crypto-burgundy ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-5 w-5 text-crypto-purple ${isLoading ? "animate-spin" : ""}`} />
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-bold">{formatLastUpdateTime()}</p>
@@ -145,13 +126,13 @@ const Dashboard = () => {
             <div className="lg:col-span-2">
               <div className="bg-crypto-card rounded-lg p-4 mb-6">
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {cryptoPairs.map(pair => (
+                  {supportedPairs.map(pair => (
                     <button
                       key={pair}
                       onClick={() => setSelectedPair(pair)}
                       className={`px-3 py-1 rounded-full text-sm ${
                         selectedPair === pair 
-                          ? 'bg-crypto-burgundy text-white' 
+                          ? 'bg-crypto-purple text-white' 
                           : 'bg-crypto-light-card/30 text-gray-300 hover:bg-crypto-light-card/50'
                       }`}
                     >
@@ -168,19 +149,26 @@ const Dashboard = () => {
             
             {/* Right sidebar */}
             <div className="space-y-6">
-              {/* Arbitrage Type Selector */}
-              <ArbitrageType 
-                onTypeChange={handleArbitrageTypeChange}
-                selectedType={arbitrageType}
-              />
-              
-              {/* Trading Settings */}
-              <TradingSettings 
-                autoTrading={autoTrading}
-                onAutoTradingChange={handleAutoTradingChange}
-                minProfit={minProfit}
-                onMinProfitChange={setMinProfit}
-              />
+              {/* Auto Trading Status */}
+              {autoTrading && (
+                <Card className="bg-crypto-card border-gray-800 border-green-500 border-2">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg font-medium text-white flex items-center">
+                      <span className="mr-2">Auto Trading</span>
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400">ACTIVE</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-300 mb-3">
+                      The trading bot is actively monitoring for opportunities with a minimum profit of {minProfit}%
+                    </p>
+                    <div className="flex items-center">
+                      <div className="animate-pulse w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                      <span className="text-xs text-gray-400">Trades will execute automatically</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               
               {/* Most active pairs */}
               <Card className="bg-crypto-card border-gray-800">
@@ -199,7 +187,7 @@ const Dashboard = () => {
                           <span className="h-6 w-6 rounded-full bg-crypto-light-card flex items-center justify-center text-xs mr-2">
                             {index + 1}
                           </span>
-                          <span className={selectedPair === pair ? "text-crypto-burgundy" : "text-white"}>
+                          <span className={selectedPair === pair ? "text-crypto-purple" : "text-white"}>
                             {pair}
                           </span>
                         </div>

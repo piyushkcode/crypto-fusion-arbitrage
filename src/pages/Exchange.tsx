@@ -7,12 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cryptoPairs, exchanges } from '@/utils/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { useTradingContext } from '@/contexts/TradingContext';
+import { formatDistanceToNow } from 'date-fns';
 
 const Exchange = () => {
   const { toast } = useToast();
+  const { trades, addTrade } = useTradingContext();
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [selectedExchange, setSelectedExchange] = useState('Binance');
   const [amount, setAmount] = useState('');
+  
+  // Filter only exchange trades (not arbitrage trades)
+  const exchangeTrades = trades.filter(trade => 
+    !trade.profit && (trade.type === 'buy' || trade.type === 'sell')
+  );
   
   const handleExchange = (type: 'buy' | 'sell') => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -24,10 +32,29 @@ const Exchange = () => {
       return;
     }
     
+    // Get current price for the selected pair from mock data
+    const pairBase = selectedPair.split('/')[0];
+    const price = type === 'buy' ? 
+      60000 * (1 + Math.random() * 0.01) : // Slightly random price
+      60000 * (1 - Math.random() * 0.01);
+    
+    // Add trade to history
+    addTrade({
+      type,
+      pair: selectedPair,
+      amount: Number(amount),
+      price,
+      exchange: selectedExchange,
+      status: 'completed'
+    });
+    
     toast({
       title: type === 'buy' ? "Buy Order Placed" : "Sell Order Placed",
-      description: `${type === 'buy' ? 'Buying' : 'Selling'} ${amount} ${selectedPair.split('/')[0]} on ${selectedExchange}`,
+      description: `${type === 'buy' ? 'Buying' : 'Selling'} ${amount} ${pairBase} on ${selectedExchange}`,
     });
+    
+    // Reset amount
+    setAmount('');
   };
 
   return (
@@ -120,9 +147,39 @@ const Exchange = () => {
                 <CardTitle className="text-lg font-medium text-white">Order History</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center text-gray-400 py-16">
-                  No order history available. Place your first order to see it here.
-                </div>
+                {exchangeTrades.length > 0 ? (
+                  <div className="space-y-4">
+                    {exchangeTrades.map(trade => (
+                      <div 
+                        key={trade.id} 
+                        className="bg-crypto-light-card/20 rounded-md p-3 flex justify-between items-center"
+                      >
+                        <div>
+                          <div className="flex items-center">
+                            <span className={`font-medium ${trade.type === 'buy' ? 'text-crypto-green' : 'text-crypto-burgundy'}`}>
+                              {trade.type === 'buy' ? 'Buy' : 'Sell'}
+                            </span>
+                            <span className="mx-2">•</span>
+                            <span className="text-sm text-gray-300">{trade.pair}</span>
+                          </div>
+                          <div className="text-sm text-gray-400 mt-1">
+                            {trade.amount.toFixed(6)} @ ${trade.price.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-300">{trade.exchange}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {formatDistanceToNow(trade.timestamp, { addSuffix: true })}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 py-16">
+                    No order history available. Place your first order to see it here.
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

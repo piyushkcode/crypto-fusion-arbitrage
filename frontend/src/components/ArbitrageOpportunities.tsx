@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { ArrowRightIcon, TrendingUpIcon } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useTradingContext } from '@/contexts/TradingContext';
 
 interface ArbitrageOpportunity {
   symbol: string;
@@ -22,6 +24,9 @@ interface ArbitrageOpportunitiesProps {
 }
 
 const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportunities }) => {
+  const { toast } = useToast();
+  const { addTrade } = useTradingContext();
+
   const formatPrice = (price: number) => {
     if (price >= 1000) {
       return price.toFixed(2);
@@ -40,8 +45,24 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
 
   const handleExecuteTrade = (opportunity: ArbitrageOpportunity) => {
     // This would be connected to your backend API in a real implementation
-    console.log(`Executing trade: ${opportunity.symbol} from ${opportunity.buy_exchange} to ${opportunity.sell_exchange}`);
-    alert(`Trade simulation: Buy ${opportunity.symbol} on ${opportunity.buy_exchange} at ${formatPrice(opportunity.buy_price)} and sell on ${opportunity.sell_exchange} at ${formatPrice(opportunity.sell_price)}`);
+    const amount = 0.1 + Math.random() * 0.4; // Random amount between 0.1 and 0.5
+    const profit = (opportunity.sell_price - opportunity.buy_price) * amount;
+    
+    // Add trade to history
+    addTrade({
+      type: 'buy',
+      pair: opportunity.symbol,
+      amount,
+      price: opportunity.buy_price,
+      exchange: opportunity.buy_exchange,
+      status: 'completed',
+      profit
+    });
+    
+    toast({
+      title: "Trade Executed Successfully",
+      description: `Bought ${amount.toFixed(6)} ${opportunity.symbol.split('/')[0]} on ${opportunity.buy_exchange} and sold on ${opportunity.sell_exchange} for ${opportunity.profit_percent.toFixed(2)}% profit`,
+    });
   };
 
   return (
