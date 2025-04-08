@@ -176,6 +176,18 @@ class ExchangeService:
         finally:
             await self.unregister_client(websocket)
 
+    async def fetch_all_data():
+    tasks = [self.fetch_binance(), self.fetch_kucoin(),self.fetch_bybit,self.fetch_okx()]
+    return await asyncio.gather(*tasks)
+
+    async for message in websocket:
+    data = json.loads(message)
+    if data.get('type') == 'ping':
+        await websocket.send(json.dumps({'type': 'pong'}))
+    elif data.get('type') == 'subscribe':
+        # Handle subscription
+        pass
+        
     def start(self):
         """Start the WebSocket server and data fetching"""
         loop = asyncio.get_event_loop()
