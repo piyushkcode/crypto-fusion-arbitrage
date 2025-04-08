@@ -1,13 +1,21 @@
+
 // Mock data generation for crypto prices
 export const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
 export const cryptoPairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
 
-interface PriceData {
+// Interface for price data (works with both mock and real data)
+export interface PriceData {
   exchange: string;
-  pair: string;
-  price: number;
+  symbol?: string; // Used in real API
+  pair?: string;   // Used in mock data
+  price?: number;  // Used in mock data
+  last?: number;   // Used in real API
   volume: number;
-  change24h: number;
+  change24h?: number; // Used in mock data
+  percentage?: number; // Used in real API
+  bid?: number;
+  ask?: number;
+  timestamp?: string | Date;
 }
 
 export interface ArbitrageOpportunity {
@@ -21,7 +29,7 @@ export interface ArbitrageOpportunity {
   status: 'active' | 'executed' | 'expired';
 }
 
-// Modify base prices to reflect more recent market conditions
+// Base prices for crypto pairs (used as fallback when API is not available)
 const basePrices = {
   'BTC/USDT': 70000,  // Updated to a more current price point
   'ETH/USDT': 3800,
@@ -48,9 +56,12 @@ export const generateAllPriceData = (): PriceData[] => {
       allData.push({
         exchange,
         pair,
+        symbol: pair,
         price: generatePrice(basePrice),
+        last: generatePrice(basePrice),
         volume: +(Math.random() * 1000000).toFixed(0),
         change24h: +(Math.random() * 10 - 5).toFixed(2),
+        percentage: +(Math.random() * 10 - 5).toFixed(2),
       });
     });
   });
@@ -63,9 +74,18 @@ export const generateArbitrageOpportunities = (priceData: PriceData[], minProfit
   const opportunities: ArbitrageOpportunity[] = [];
   const statuses: ('active' | 'executed' | 'expired')[] = ['active', 'executed', 'expired'];
 
+  // Normalize price data to handle both API and mock data formats
+  const normalizedData = priceData.map(data => ({
+    exchange: data.exchange,
+    pair: data.pair || data.symbol || 'Unknown',
+    price: data.price || data.last || 0,
+    volume: data.volume || 0,
+    change24h: data.change24h || data.percentage || 0,
+  }));
+
   // Group price data by pair
-  const pairGroups: Record<string, PriceData[]> = {};
-  priceData.forEach(data => {
+  const pairGroups: Record<string, any[]> = {};
+  normalizedData.forEach(data => {
     if (!pairGroups[data.pair]) {
       pairGroups[data.pair] = [];
     }
@@ -76,6 +96,9 @@ export const generateArbitrageOpportunities = (priceData: PriceData[], minProfit
   Object.entries(pairGroups).forEach(([pair, prices]) => {
     // Sort by price (ascending)
     prices.sort((a, b) => a.price - b.price);
+    
+    // Need at least 2 prices to compare
+    if (prices.length < 2) return;
     
     // Take the lowest and highest price for each pair
     const lowestPrice = prices[0];
@@ -105,9 +128,15 @@ export const generateArbitrageOpportunities = (priceData: PriceData[], minProfit
 
 // Get the most active crypto pairs based on volume
 export const getMostActivePairs = (priceData: PriceData[]): string[] => {
+  // Normalize data to handle both API and mock data formats
+  const normalizedData = priceData.map(data => ({
+    pair: data.pair || data.symbol || 'Unknown',
+    volume: data.volume || 0,
+  }));
+
   // Group and sum volumes by pair
   const volumeByPair: Record<string, number> = {};
-  priceData.forEach(data => {
+  normalizedData.forEach(data => {
     if (!volumeByPair[data.pair]) {
       volumeByPair[data.pair] = 0;
     }

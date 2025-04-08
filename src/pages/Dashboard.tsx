@@ -6,53 +6,68 @@ import StatsCard from '@/components/StatsCard';
 import PriceTable from '@/components/PriceTable';
 import ArbitrageOpportunities from '@/components/ArbitrageOpportunities';
 import PriceComparisonChart from '@/components/PriceComparisonChart';
-import { Activity, TrendingUp, Zap, RefreshCw } from 'lucide-react';
+import { Activity, TrendingUp, Zap, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useTradingContext } from '@/contexts/TradingContext';
-import { generateAllPriceData, generateArbitrageOpportunities, getMostActivePairs, cryptoPairs } from '@/utils/mockData';
+import { generateArbitrageOpportunities, getMostActivePairs, cryptoPairs } from '@/utils/mockData';
+import { useWebSocket } from '@/hooks/use-websocket';
 
 const Dashboard = () => {
   const { toast } = useToast();
   const { autoTrading, minProfit } = useTradingContext();
-  const [priceData, setPriceData] = useState(generateAllPriceData());
-  const [opportunities, setOpportunities] = useState(generateArbitrageOpportunities(priceData, minProfit));
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const [supportedPairs, setSupportedPairs] = useState(cryptoPairs);
-  const [mostActivePairs, setMostActivePairs] = useState(getMostActivePairs(priceData));
-
-  // Update data every 10 seconds
+  const [mostActivePairs, setMostActivePairs] = useState<string[]>([]);
+  
+  // Use WebSocket for real-time data
+  const { isConnected, tickerData } = useWebSocket();
+  
+  // Generate arbitrage opportunities from real-time data
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  
+  // Update opportunities when ticker data changes
   useEffect(() => {
-    const interval = setInterval(() => {
-      refreshData();
-    }, 10000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  // Function to manually refresh data
+    if (tickerData && tickerData.length > 0) {
+      setLastUpdateTime(new Date());
+      
+      // Generate arbitrage opportunities from real ticker data
+      const newOpportunities = generateArbitrageOpportunities(tickerData, minProfit);
+      setOpportunities(newOpportunities);
+      
+      // Update most active pairs
+      const activePairs = getMostActivePairs(tickerData);
+      setMostActivePairs(activePairs);
+      
+      // Show notification if we detect a high profit opportunity
+      const highProfitOpp = newOpportunities.find(opp => opp.profitPercent > 2);
+      if (highProfitOpp) {
+        toast({
+          title: "High Profit Opportunity!",
+          description: `${highProfitOpp.profitPercent.toFixed(2)}% on ${highProfitOpp.pair} (${highProfitOpp.buyExchange} → ${highProfitOpp.sellExchange})`,
+        });
+      }
+    }
+  }, [tickerData, minProfit, toast]);
+  
+  // Function to manually refresh data (in case WebSocket is not connected)
   const refreshData = () => {
     setIsLoading(true);
-    
     setTimeout(() => {
-      const newPriceData = generateAllPriceData();
-      setPriceData(newPriceData);
-      setOpportunities(generateArbitrageOpportunities(newPriceData, minProfit));
-      setMostActivePairs(getMostActivePairs(newPriceData));
-      setLastUpdateTime(new Date());
       setIsLoading(false);
-      
       toast({
-        title: "Data Refreshed",
-        description: "Latest market data has been loaded",
+        title: "Manual Refresh Attempted",
+        description: isConnected 
+          ? "Real-time data is already streaming through WebSocket" 
+          : "WebSocket connection failed. Using mock data instead.",
       });
     }, 500);
   };
 
   // Filter price data for the selected pair
-  const filteredPriceData = priceData.filter(data => data.pair === selectedPair);
+  const filteredPriceData = tickerData?.filter(data => data.symbol === selectedPair) || [];
   
   // Get stats for dashboard
   const totalOpportunities = opportunities.length;
@@ -81,6 +96,24 @@ const Dashboard = () => {
           <div className="mb-6">
             <h1 className="text-2xl font-bold mb-2">Arbitrage Dashboard</h1>
             <p className="text-gray-400">Monitor real-time prices and arbitrage opportunities</p>
+            
+            {/* WebSocket status indicator */}
+            <div className="mt-2 text-sm">
+              <span className="flex items-center">
+                Connection: 
+                {isConnected ? (
+                  <span className="text-crypto-green ml-2 flex items-center">
+                    <span className="inline-block w-2 h-2 bg-crypto-green rounded-full animate-pulse mr-2"></span>
+                    Live Data Streaming
+                  </span>
+                ) : (
+                  <span className="text-crypto-burgundy ml-2 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    WebSocket Disconnected - Using Mock Data
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
           
           {/* Stats row */}
@@ -177,25 +210,31 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {mostActivePairs.map((pair, index) => (
-                      <div 
-                        key={pair}
-                        onClick={() => setSelectedPair(pair)}
-                        className="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-crypto-light-card/30"
-                      >
-                        <div className="flex items-center">
-                          <span className="h-6 w-6 rounded-full bg-crypto-light-card flex items-center justify-center text-xs mr-2">
-                            {index + 1}
-                          </span>
-                          <span className={selectedPair === pair ? "text-crypto-purple" : "text-white"}>
-                            {pair}
-                          </span>
+                    {mostActivePairs.length > 0 ? (
+                      mostActivePairs.map((pair, index) => (
+                        <div 
+                          key={pair}
+                          onClick={() => setSelectedPair(pair)}
+                          className="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-crypto-light-card/30"
+                        >
+                          <div className="flex items-center">
+                            <span className="h-6 w-6 rounded-full bg-crypto-light-card flex items-center justify-center text-xs mr-2">
+                              {index + 1}
+                            </span>
+                            <span className={selectedPair === pair ? "text-crypto-purple" : "text-white"}>
+                              {pair}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            View
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          View
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        Waiting for volume data...
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>

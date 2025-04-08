@@ -1,4 +1,3 @@
-
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -12,6 +11,7 @@ from services.exchange_service import ExchangeService
 from services.arbitrage_service import ArbitrageService
 from services.database_service import DatabaseService
 from services.prediction_service import PredictionService
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -24,9 +24,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize services
 exchange_service = ExchangeService(
-    api_key='67ed8abd71c378000192926b',
-    api_secret='8541e8aa-5b0b-4a81-b004-156359a36f44',
-    api_passphrase='kucoinapicrypto'
+    api_key=os.environ.get('KUCOIN_API_KEY', '67ed8abd71c378000192926b'),
+    api_secret=os.environ.get('KUCOIN_API_SECRET', '8541e8aa-5b0b-4a81-b004-156359a36f44'),
+    api_passphrase=os.environ.get('KUCOIN_API_PASSPHRASE', 'kucoinapicrypto')
 )
 
 database_service = DatabaseService()
@@ -41,6 +41,11 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info('Client disconnected')
+
+@socketio.on('subscribe_tickers')
+def handle_subscribe_tickers(data):
+    logger.info(f'Client subscribed to tickers: {data}')
+    # Data will be sent via the WebSocket server
 
 # REST API endpoints
 @app.route('/api/exchanges', methods=['GET'])
@@ -122,6 +127,15 @@ def get_historical():
     data = database_service.get_historical_prices(exchange, pair, days)
     return jsonify(data)
 
+def start_websocket_thread():
+    """Start the WebSocket server in a separate thread"""
+    exchange_service.start()
+
 if __name__ == '__main__':
+    # Start WebSocket server in a background thread
+    websocket_thread = threading.Thread(target=start_websocket_thread)
+    websocket_thread.daemon = True
+    websocket_thread.start()
+    
     # Start the Flask app with SocketIO
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
