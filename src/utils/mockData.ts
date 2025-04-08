@@ -1,4 +1,3 @@
-
 // Mock data generation for crypto prices
 export const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
 export const cryptoPairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
@@ -22,19 +21,21 @@ export interface ArbitrageOpportunity {
   status: 'active' | 'executed' | 'expired';
 }
 
-// Generate random price with small variations
-export const generatePrice = (basePrice: number): number => {
-  const variation = basePrice * 0.02 * (Math.random() - 0.5);
-  return +(basePrice + variation).toFixed(2);
+// Modify base prices to reflect more recent market conditions
+const basePrices = {
+  'BTC/USDT': 70000,  // Updated to a more current price point
+  'ETH/USDT': 3800,
+  'XRP/USDT': 0.6,
+  'SOL/USDT': 180,
+  'ADA/USDT': 0.55,
 };
 
-// Base prices for crypto pairs
-const basePrices = {
-  'BTC/USDT': 60000,
-  'ETH/USDT': 3500,
-  'XRP/USDT': 0.5,
-  'SOL/USDT': 150,
-  'ADA/USDT': 0.45,
+// Improved price generation with more significant variations
+export const generatePrice = (basePrice: number): number => {
+  // Introduce more substantial price variations
+  const volatility = 0.05; // 5% potential price swing
+  const variation = basePrice * volatility * (Math.random() * 2 - 1);
+  return +(basePrice + variation).toFixed(2);
 };
 
 // Generate mock price data for all exchanges and pairs
