@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -6,6 +5,7 @@ import StatsCard from '@/components/StatsCard';
 import PriceTable from '@/components/PriceTable';
 import ArbitrageOpportunities from '@/components/ArbitrageOpportunities';
 import PriceComparisonChart from '@/components/PriceComparisonChart';
+import ConnectionStatus from '@/components/ConnectionStatus';
 import { Activity, TrendingUp, Zap, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -23,7 +23,14 @@ const Dashboard = () => {
   const [mostActivePairs, setMostActivePairs] = useState<string[]>([]);
   
   // Use WebSocket for real-time data
-  const { isConnected, tickerData } = useWebSocket();
+  const { 
+    connectionState, 
+    isConnected, 
+    tickerData, 
+    reconnect, 
+    lastHeartbeatTime,
+    connectionLogs 
+  } = useWebSocket();
   
   // Generate arbitrage opportunities from real-time data
   const [opportunities, setOpportunities] = useState<any[]>([]);
@@ -55,6 +62,7 @@ const Dashboard = () => {
   // Function to manually refresh data (in case WebSocket is not connected)
   const refreshData = () => {
     setIsLoading(true);
+    reconnect(); // Try to reconnect WebSocket
     setTimeout(() => {
       setIsLoading(false);
       toast({
@@ -96,24 +104,6 @@ const Dashboard = () => {
           <div className="mb-6">
             <h1 className="text-2xl font-bold mb-2">Arbitrage Dashboard</h1>
             <p className="text-gray-400">Monitor real-time prices and arbitrage opportunities</p>
-            
-            {/* WebSocket status indicator */}
-            <div className="mt-2 text-sm">
-              <span className="flex items-center">
-                Connection: 
-                {isConnected ? (
-                  <span className="text-crypto-green ml-2 flex items-center">
-                    <span className="inline-block w-2 h-2 bg-crypto-green rounded-full animate-pulse mr-2"></span>
-                    Live Data Streaming
-                  </span>
-                ) : (
-                  <span className="text-crypto-burgundy ml-2 flex items-center">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    WebSocket Disconnected - Using Mock Data
-                  </span>
-                )}
-              </span>
-            </div>
           </div>
           
           {/* Stats row */}
@@ -182,6 +172,13 @@ const Dashboard = () => {
             
             {/* Right sidebar */}
             <div className="space-y-6">
+              {/* Connection status card - NEW */}
+              <ConnectionStatus 
+                state={connectionState}
+                lastHeartbeat={lastHeartbeatTime}
+                connectionLogs={connectionLogs}
+              />
+              
               {/* Auto Trading Status */}
               {autoTrading && (
                 <Card className="bg-crypto-card border-gray-800 border-green-500 border-2">
