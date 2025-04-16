@@ -25,6 +25,9 @@ interface PriceTableProps {
 }
 
 const PriceTable: React.FC<PriceTableProps> = ({ data, title }) => {
+  // Ensure data is an array even if undefined is passed
+  const safeData = Array.isArray(data) ? data : [];
+
   return (
     <div className="rounded-lg bg-crypto-card p-4 shadow-md">
       <h2 className="mb-4 text-lg font-medium text-white">{title}</h2>
@@ -40,34 +43,50 @@ const PriceTable: React.FC<PriceTableProps> = ({ data, title }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((item, index) => (
-              <TableRow 
-                key={index} 
-                className="border-b border-gray-800 hover:bg-crypto-light-card/50"
-              >
-                <TableCell className="font-medium">{item.exchange}</TableCell>
-                <TableCell>{item.pair}</TableCell>
-                <TableCell className="text-right font-mono">
-                  {item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </TableCell>
-                <TableCell className="text-right">
-                  {(item.volume >= 1000000 
-                    ? `$${(item.volume / 1000000).toFixed(2)}M` 
-                    : `$${(item.volume / 1000).toFixed(0)}K`)}
-                </TableCell>
-                <TableCell className={cn(
-                  "text-right flex items-center justify-end",
-                  item.change24h > 0 ? "text-crypto-green" : "text-crypto-red"
-                )}>
-                  {item.change24h > 0 ? (
-                    <ArrowUpIcon className="mr-1 h-4 w-4" />
-                  ) : (
-                    <ArrowDownIcon className="mr-1 h-4 w-4" />
-                  )}
-                  {Math.abs(item.change24h)}%
+            {safeData.length > 0 ? (
+              safeData.map((item, index) => (
+                <TableRow 
+                  key={index} 
+                  className="border-b border-gray-800 hover:bg-crypto-light-card/50"
+                >
+                  <TableCell className="font-medium">{item.exchange}</TableCell>
+                  <TableCell>{item.pair}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    {item.price !== undefined && !isNaN(item.price)
+                      ? item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      : "N/A"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {item.volume !== undefined && !isNaN(item.volume)
+                      ? (item.volume >= 1000000 
+                          ? `$${(item.volume / 1000000).toFixed(2)}M` 
+                          : `$${(item.volume / 1000).toFixed(0)}K`)
+                      : "N/A"}
+                  </TableCell>
+                  <TableCell className={cn(
+                    "text-right flex items-center justify-end",
+                    item.change24h > 0 ? "text-crypto-green" : "text-crypto-red"
+                  )}>
+                    {item.change24h !== undefined ? (
+                      <>
+                        {item.change24h > 0 ? (
+                          <ArrowUpIcon className="mr-1 h-4 w-4" />
+                        ) : (
+                          <ArrowDownIcon className="mr-1 h-4 w-4" />
+                        )}
+                        {Math.abs(item.change24h)}%
+                      </>
+                    ) : "N/A"}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-4 text-gray-500">
+                  No price data available
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>
