@@ -1,148 +1,157 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useWebSocket } from '@/hooks/use-websocket';
 import { 
-  Wifi, 
-  WifiOff, 
-  AlertTriangle, 
-  Loader2, 
-  Database,
-  ChevronDown,
-  ChevronUp
+  WifiIcon, 
+  WifiOffIcon, 
+  RefreshCwIcon, 
+  AlertTriangleIcon,
+  ChevronDownIcon,
+  CheckCircleIcon,
+  XCircleIcon
 } from 'lucide-react';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider
-} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { ConnectionState } from '@/hooks/use-websocket';
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
-interface ConnectionStatusProps {
-  state: ConnectionState;
-  lastHeartbeat: Date | null;
-  connectionLogs: string[];
-}
+const ConnectionStatus = () => {
+  const { connectionState, reconnect, connectionLogs, lastHeartbeatTime } = useWebSocket();
+  const [isOpen, setIsOpen] = useState(false);
 
-export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
-  state,
-  lastHeartbeat,
-  connectionLogs
-}) => {
-  // Determine status display based on state
-  const getStatusDisplay = () => {
-    switch (state) {
+  // Determine connection status styling
+  const getConnectionStatusInfo = () => {
+    switch (connectionState) {
       case 'connected':
         return {
-          icon: <Wifi className="h-5 w-5 text-green-400" />,
-          label: 'Connected',
-          color: 'text-green-400',
-          bgColor: 'bg-green-400/20',
-          description: 'Live data streaming'
+          icon: <WifiIcon className="h-4 w-4" />,
+          badgeClass: 'bg-green-500/20 text-green-500',
+          text: 'Connected',
+          description: 'Live data streaming active'
         };
       case 'connecting':
         return {
-          icon: <Loader2 className="h-5 w-5 text-yellow-400 animate-spin" />,
-          label: 'Connecting',
-          color: 'text-yellow-400',
-          bgColor: 'bg-yellow-400/20',
-          description: 'Attempting to connect...'
-        };
-      case 'disconnected':
-        return {
-          icon: <WifiOff className="h-5 w-5 text-gray-400" />,
-          label: 'Disconnected',
-          color: 'text-gray-400',
-          bgColor: 'bg-gray-400/20',
-          description: 'No connection to server'
+          icon: <RefreshCwIcon className="h-4 w-4 animate-spin" />,
+          badgeClass: 'bg-yellow-500/20 text-yellow-500',
+          text: 'Connecting',
+          description: 'Attempting to establish connection'
         };
       case 'error':
         return {
-          icon: <AlertTriangle className="h-5 w-5 text-red-400" />,
-          label: 'Connection Error',
-          color: 'text-red-400',
-          bgColor: 'bg-red-400/20',
-          description: 'Failed to connect to server'
+          icon: <AlertTriangleIcon className="h-4 w-4" />,
+          badgeClass: 'bg-red-500/20 text-red-500',
+          text: 'Error',
+          description: 'Connection failed'
         };
       case 'using-mock-data':
         return {
-          icon: <Database className="h-5 w-5 text-purple-400" />,
-          label: 'Using Mock Data',
-          color: 'text-purple-400',
-          bgColor: 'bg-purple-400/20',
-          description: 'Connection failed, using local data'
+          icon: <AlertTriangleIcon className="h-4 w-4" />,
+          badgeClass: 'bg-purple-500/20 text-purple-500',
+          text: 'Using Mock Data',
+          description: 'Connection failed, using simulated data'
         };
       default:
         return {
-          icon: <AlertTriangle className="h-5 w-5 text-gray-400" />,
-          label: 'Unknown',
-          color: 'text-gray-400',
-          bgColor: 'bg-gray-400/20',
-          description: 'Status unknown'
+          icon: <WifiOffIcon className="h-4 w-4" />,
+          badgeClass: 'bg-gray-500/20 text-gray-400',
+          text: 'Disconnected',
+          description: 'No active connection'
         };
     }
   };
 
-  const statusDisplay = getStatusDisplay();
-  const lastHeartbeatText = lastHeartbeat 
-    ? `Last heartbeat: ${new Date(lastHeartbeat).toLocaleTimeString()}`
+  const statusInfo = getConnectionStatusInfo();
+  const lastHeartbeat = lastHeartbeatTime 
+    ? new Date(lastHeartbeatTime).toLocaleTimeString() 
     : 'No heartbeat received';
 
   return (
-    <div className="rounded-lg border border-gray-700 bg-crypto-light-card">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2">
-            {statusDisplay.icon}
-            <span className={`font-medium ${statusDisplay.color}`}>{statusDisplay.label}</span>
+    <Card className="bg-crypto-card border-gray-800">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-medium text-white">Connection Status</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <Badge variant="outline" className={cn("mr-2", statusInfo.badgeClass)}>
+              <span className="flex items-center">
+                {statusInfo.icon}
+                <span className="ml-1">{statusInfo.text}</span>
+              </span>
+            </Badge>
+            <span className="text-sm text-gray-400">{statusInfo.description}</span>
           </div>
-          <div className={`px-2 py-1 rounded-full text-xs ${statusDisplay.bgColor} ${statusDisplay.color}`}>
-            {statusDisplay.description}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="bg-crypto-light-card/30 border-gray-700 hover:bg-gray-800"
+            onClick={() => reconnect()}
+          >
+            <RefreshCwIcon className="h-3 w-3 mr-1" />
+            Reconnect
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="bg-crypto-light-card/20 p-2 rounded-md">
+            <h3 className="text-xs text-gray-400 mb-1">Last Heartbeat</h3>
+            <div className="flex items-center">
+              {lastHeartbeatTime ? (
+                <CheckCircleIcon className="h-3 w-3 text-green-500 mr-1" />
+              ) : (
+                <XCircleIcon className="h-3 w-3 text-red-500 mr-1" />
+              )}
+              <p className="text-sm">{lastHeartbeat}</p>
+            </div>
+          </div>
+          <div className="bg-crypto-light-card/20 p-2 rounded-md">
+            <h3 className="text-xs text-gray-400 mb-1">Connection Type</h3>
+            <p className="text-sm">
+              {connectionState === 'using-mock-data' ? 'Mock Data' : 'WebSocket'}
+            </p>
           </div>
         </div>
         
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="text-xs text-gray-400">
-                {lastHeartbeatText}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-sm">Heartbeats verify the connection is alive</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      <Accordion type="single" collapsible className="border-t border-gray-700">
-        <AccordionItem value="connection-logs">
-          <AccordionTrigger className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:no-underline">
-            Connection Logs
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="px-4 pb-4 max-h-80 overflow-y-auto">
-              <div className="bg-crypto-dark rounded p-2 font-mono text-xs">
-                {connectionLogs.length > 0 ? (
-                  connectionLogs.map((log, index) => (
-                    <div key={index} className={`py-1 ${log.includes('[ERROR]') ? 'text-red-400' : log.includes('[WARN]') ? 'text-yellow-400' : 'text-gray-300'}`}>
-                      {log}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-500">No connection logs available</div>
-                )}
-              </div>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex items-center justify-between w-full text-left font-normal hover:bg-crypto-light-card/20"
+            >
+              <span className="text-xs text-gray-400">Connection Logs</span>
+              <ChevronDownIcon className={cn("h-4 w-4 transition-transform", isOpen && "transform rotate-180")} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-1">
+            <div className="bg-crypto-light-card/10 rounded-md p-2 h-32 overflow-y-auto text-xs space-y-1">
+              {connectionLogs.length > 0 ? (
+                connectionLogs.map((log, index) => (
+                  <div 
+                    key={index} 
+                    className={cn(
+                      "py-1 px-2 rounded", 
+                      log.includes('[ERROR]') ? "text-red-400 bg-red-900/10" :
+                      log.includes('[WARN]') ? "text-yellow-400 bg-yellow-900/10" :
+                      "text-gray-400"
+                    )}
+                  >
+                    {log}
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 italic">No connection logs available</div>
+              )}
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,3 +1,4 @@
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -86,9 +87,10 @@ def get_opportunities():
     """Get current arbitrage opportunities"""
     min_profit = float(request.args.get('min_profit', 0.5))
     pair = request.args.get('pair', 'all')
+    strategy = request.args.get('strategy', 'simple')  # Default to simple arbitrage
     
     try:
-        opportunities = arbitrage_service.find_opportunities(min_profit, pair)
+        opportunities = arbitrage_service.find_opportunities(min_profit, pair, strategy)
         return jsonify(opportunities)
     except Exception as e:
         logger.error(f"Error fetching opportunities: {str(e)}")
@@ -113,12 +115,16 @@ def execute_trade():
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'Missing required fields'}), 400
     
+    # Get strategy type from request
+    strategy_type = data.get('strategy_type', 'simple')
+    
     result = arbitrage_service.execute_trade(
         user_id=data['user_id'],
         buy_exchange=data['buy_exchange'],
         sell_exchange=data['sell_exchange'],
         pair=data['pair'],
-        amount=data['amount']
+        amount=data['amount'],
+        strategy_type=strategy_type
     )
     
     return jsonify(result)
@@ -132,6 +138,27 @@ def get_historical():
     
     data = database_service.get_historical_prices(exchange, pair, days)
     return jsonify(data)
+
+@app.route('/api/connection_status', methods=['GET'])
+def get_connection_status():
+    """Get current connection status information"""
+    try:
+        status = {
+            'connected': True,
+            'exchanges': {
+                'Binance': exchange_service.binance.has['publicAPI'],
+                'KuCoin': exchange_service.kucoin.has['publicAPI'],
+                'Bybit': exchange_service.bybit.has['publicAPI'],
+                'OKX': exchange_service.okx.has['publicAPI']
+            },
+            'last_update': exchange_service.last_ticker_update,
+            'cache_size': len(exchange_service.price_cache),
+            'timestamp': datetime.now().isoformat()
+        }
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"Error getting connection status: {str(e)}")
+        return jsonify({'error': 'Failed to get connection status'}), 500
 
 def start_websocket_thread():
     """Start the WebSocket server in a separate thread"""

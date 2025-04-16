@@ -1,151 +1,237 @@
-
-// Mock data generation for crypto prices
-export const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
-export const cryptoPairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
-
-// Interface for price data (works with both mock and real data)
 export interface PriceData {
   exchange: string;
-  symbol?: string; // Used in real API
-  pair?: string;   // Used in mock data
-  price?: number;  // Used in mock data
-  last?: number;   // Used in real API
+  symbol: string;
+  last: number;
+  bid: number;
+  ask: number;
   volume: number;
-  change24h?: number; // Used in mock data
-  percentage?: number; // Used in real API
-  bid?: number;
-  ask?: number;
-  timestamp?: string | Date;
+  change24h: number;
+  timestamp: Date;
 }
 
+// Updated ArbitrageOpportunity type
 export interface ArbitrageOpportunity {
   id: string;
-  buyExchange: string;
-  sellExchange: string;
   pair: string;
-  priceDiff: number;
+  buyExchange?: string;
+  sellExchange?: string;
+  buyPrice?: number;
+  sellPrice?: number;
+  priceDiff?: number;
   profitPercent: number;
   timestamp: Date;
   status: 'active' | 'executed' | 'expired';
+  type?: 'simple' | 'triangular' | 'statistical';
+  exchange?: string;
+  finalAmount?: number;
+  path?: any;
+  zScore?: number;
 }
 
-// Base prices for crypto pairs (used as fallback when API is not available)
-const basePrices = {
-  'BTC/USDT': 70000,  // Updated to a more current price point
-  'ETH/USDT': 3800,
-  'XRP/USDT': 0.6,
-  'SOL/USDT': 180,
-  'ADA/USDT': 0.55,
-};
+export function generatePriceData(exchange: string, symbol: string): PriceData {
+  const now = new Date();
+  const last = 100 + Math.random() * 10;
+  const bid = last - Math.random() * 0.1;
+  const ask = last + Math.random() * 0.1;
+  const volume = 1000 + Math.random() * 100;
+  const change24h = Math.random() * 2 - 1;
 
-// Improved price generation with more significant variations
-export const generatePrice = (basePrice: number): number => {
-  // Introduce more substantial price variations
-  const volatility = 0.05; // 5% potential price swing
-  const variation = basePrice * volatility * (Math.random() * 2 - 1);
-  return +(basePrice + variation).toFixed(2);
-};
+  return {
+    exchange: exchange,
+    symbol: symbol,
+    last: last,
+    bid: bid,
+    ask: ask,
+    volume: volume,
+    change24h: change24h,
+    timestamp: now
+  };
+}
 
-// Generate mock price data for all exchanges and pairs
-export const generateAllPriceData = (): PriceData[] => {
-  const allData: PriceData[] = [];
+export function generateAllPriceData(): any[] {
+  const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
+  const symbols = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
+  const data: any[] = [];
 
   exchanges.forEach(exchange => {
-    cryptoPairs.forEach(pair => {
-      const basePrice = basePrices[pair as keyof typeof basePrices];
-      allData.push({
-        exchange,
-        pair,
-        symbol: pair,
-        price: generatePrice(basePrice),
-        last: generatePrice(basePrice),
-        volume: +(Math.random() * 1000000).toFixed(0),
-        change24h: +(Math.random() * 10 - 5).toFixed(2),
-        percentage: +(Math.random() * 10 - 5).toFixed(2),
-      });
+    symbols.forEach(symbol => {
+      data.push(generatePriceData(exchange, symbol));
     });
   });
 
-  return allData;
-};
+  return data;
+}
 
-// Generate mock arbitrage opportunities
-export const generateArbitrageOpportunities = (priceData: PriceData[], minProfitThreshold: number = 0.2): ArbitrageOpportunity[] => {
+// Update to generateArbitrageOpportunities to include different arbitrage types
+export function generateArbitrageOpportunities(
+  priceData: any[], 
+  minProfit: number = 0.5, 
+  strategyType: string = 'simple'
+): ArbitrageOpportunity[] {
   const opportunities: ArbitrageOpportunity[] = [];
-  const statuses: ('active' | 'executed' | 'expired')[] = ['active', 'executed', 'expired'];
-
-  // Normalize price data to handle both API and mock data formats
-  const normalizedData = priceData.map(data => ({
-    exchange: data.exchange,
-    pair: data.pair || data.symbol || 'Unknown',
-    price: data.price || data.last || 0,
-    volume: data.volume || 0,
-    change24h: data.change24h || data.percentage || 0,
-  }));
-
-  // Group price data by pair
-  const pairGroups: Record<string, any[]> = {};
-  normalizedData.forEach(data => {
-    if (!pairGroups[data.pair]) {
-      pairGroups[data.pair] = [];
-    }
-    pairGroups[data.pair].push(data);
-  });
-
-  // For each pair, find potential arbitrage opportunities
-  Object.entries(pairGroups).forEach(([pair, prices]) => {
-    // Sort by price (ascending)
-    prices.sort((a, b) => a.price - b.price);
-    
-    // Need at least 2 prices to compare
-    if (prices.length < 2) return;
-    
-    // Take the lowest and highest price for each pair
-    const lowestPrice = prices[0];
-    const highestPrice = prices[prices.length - 1];
-    
-    // Calculate price difference and profit percentage
-    const priceDiff = highestPrice.price - lowestPrice.price;
-    const profitPercent = (priceDiff / lowestPrice.price) * 100;
-    
-    // Only include if profit is significant enough (> minProfitThreshold)
-    if (profitPercent > minProfitThreshold) {
-      opportunities.push({
-        id: `arb-${Math.random().toString(36).substring(2, 10)}`,
-        buyExchange: lowestPrice.exchange,
-        sellExchange: highestPrice.exchange,
-        pair,
-        priceDiff,
-        profitPercent,
-        timestamp: new Date(),
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-      });
-    }
-  });
-
-  return opportunities;
-};
-
-// Get the most active crypto pairs based on volume
-export const getMostActivePairs = (priceData: PriceData[]): string[] => {
-  // Normalize data to handle both API and mock data formats
-  const normalizedData = priceData.map(data => ({
-    pair: data.pair || data.symbol || 'Unknown',
-    volume: data.volume || 0,
-  }));
-
-  // Group and sum volumes by pair
-  const volumeByPair: Record<string, number> = {};
-  normalizedData.forEach(data => {
-    if (!volumeByPair[data.pair]) {
-      volumeByPair[data.pair] = 0;
-    }
-    volumeByPair[data.pair] += data.volume;
-  });
+  const now = new Date();
   
-  // Sort pairs by volume and take top 3
-  return Object.entries(volumeByPair)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(entry => entry[0]);
-};
+  if (strategyType === 'triangular') {
+    // Generate triangular arbitrage opportunities
+    const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
+    const triangularPaths = [
+      {step1: 'BTC/USDT', step2: 'ETH/BTC', step3: 'ETH/USDT'},
+      {step1: 'ETH/USDT', step2: 'XRP/ETH', step3: 'XRP/USDT'},
+      {step1: 'BTC/USDT', step2: 'XRP/BTC', step3: 'XRP/USDT'},
+    ];
+    
+    exchanges.forEach(exchange => {
+      triangularPaths.forEach(path => {
+        // Generate a random profit percentage above the minimum profit
+        const profitPercent = minProfit + Math.random() * 5;
+        
+        // Calculate a plausible final amount based on profit
+        const initialAmount = 1; // Starting with 1 USDT
+        const finalAmount = initialAmount * (1 + profitPercent/100);
+        
+        // Determine if opportunity should be active, executed, or expired
+        const statusRandom = Math.random();
+        let status: 'active' | 'executed' | 'expired';
+        
+        if (statusRandom < 0.7) {
+          status = 'active';
+        } else if (statusRandom < 0.9) {
+          status = 'executed';
+        } else {
+          status = 'expired';
+        }
+        
+        opportunities.push({
+          id: `triangular-${exchange}-${path.step1}-${Date.now()}-${Math.random()}`,
+          pair: `${path.step1} → ${path.step2} → ${path.step3}`,
+          exchange: exchange,
+          profitPercent: profitPercent,
+          timestamp: new Date(now.getTime() - Math.random() * 3600000), // Random time within last hour
+          status: status,
+          type: 'triangular',
+          finalAmount: finalAmount,
+          path: path
+        });
+      });
+    });
+  } 
+  else if (strategyType === 'statistical') {
+    // Generate statistical arbitrage opportunities
+    const pairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
+    const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
+    
+    // Generate exchange combinations
+    for (let i = 0; i < exchanges.length; i++) {
+      for (let j = i + 1; j < exchanges.length; j++) {
+        pairs.forEach(pair => {
+          // Only create opportunity if random check passes (to avoid too many opportunities)
+          if (Math.random() < 0.3) {
+            const profitPercent = minProfit + Math.random() * 3;
+            const zScore = Math.random() * 6 - 3; // z-score between -3 and 3
+            
+            // Determine buy/sell exchanges based on z-score
+            const buyExchange = zScore < 0 ? exchanges[i] : exchanges[j];
+            const sellExchange = zScore < 0 ? exchanges[j] : exchanges[i];
+            
+            // Determine if opportunity should be active, executed, or expired
+            const statusRandom = Math.random();
+            let status: 'active' | 'executed' | 'expired';
+            
+            if (statusRandom < 0.7) {
+              status = 'active';
+            } else if (statusRandom < 0.9) {
+              status = 'executed';
+            } else {
+              status = 'expired';
+            }
+            
+            opportunities.push({
+              id: `statistical-${pair}-${Date.now()}-${Math.random()}`,
+              pair: pair,
+              buyExchange: buyExchange,
+              sellExchange: sellExchange,
+              profitPercent: profitPercent,
+              timestamp: new Date(now.getTime() - Math.random() * 3600000), // Random time within last hour
+              status: status,
+              type: 'statistical',
+              zScore: Math.round(zScore * 100) / 100
+            });
+          }
+        });
+      }
+    }
+  }
+  else {
+    // Original simple arbitrage opportunities
+    
+    // Group price data by trading pair
+    const pairPrices: { [key: string]: any[] } = {};
+    
+    priceData.forEach((price: any) => {
+      if (!pairPrices[price.symbol]) {
+        pairPrices[price.symbol] = [];
+      }
+      pairPrices[price.symbol].push(price);
+    });
+    
+    // Find arbitrage opportunities in each trading pair
+    Object.keys(pairPrices).forEach(pair => {
+      const prices = pairPrices[pair];
+      
+      // Find min ask (buy) price and max bid (sell) price
+      let minAsk = Number.MAX_VALUE;
+      let maxBid = 0;
+      let buyExchange = '';
+      let sellExchange = '';
+      
+      prices.forEach(price => {
+        if (price.ask && price.ask < minAsk) {
+          minAsk = price.ask;
+          buyExchange = price.exchange;
+        }
+        
+        if (price.bid && price.bid > maxBid) {
+          maxBid = price.bid;
+          sellExchange = price.exchange;
+        }
+      });
+      
+      // Check if there's a profitable opportunity
+      if (buyExchange && sellExchange && buyExchange !== sellExchange) {
+        const priceDiff = maxBid - minAsk;
+        const profitPercent = (priceDiff / minAsk) * 100;
+        
+        if (profitPercent >= minProfit) {
+          // Determine if opportunity should be active, executed, or expired
+          const statusRandom = Math.random();
+          let status: 'active' | 'executed' | 'expired';
+          
+          if (statusRandom < 0.7) {
+            status = 'active';
+          } else if (statusRandom < 0.9) {
+            status = 'executed';
+          } else {
+            status = 'expired';
+          }
+          
+          opportunities.push({
+            id: `simple-${pair}-${Date.now()}-${Math.random()}`,
+            pair: pair,
+            buyExchange: buyExchange,
+            sellExchange: sellExchange,
+            buyPrice: minAsk,
+            sellPrice: maxBid,
+            priceDiff: priceDiff,
+            profitPercent: profitPercent,
+            timestamp: new Date(now.getTime() - Math.random() * 3600000), // Random time within last hour
+            status: status,
+            type: 'simple'
+          });
+        }
+      }
+    });
+  }
+  
+  // Sort opportunities by profit percentage (descending)
+  return opportunities.sort((a, b) => b.profitPercent - a.profitPercent);
+}
