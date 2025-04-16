@@ -1,3 +1,4 @@
+
 export interface PriceData {
   exchange: string;
   symbol: string;
@@ -28,6 +29,10 @@ export interface ArbitrageOpportunity {
   zScore?: number;
 }
 
+// Add these missing exports
+export const cryptoPairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
+export const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
+
 export function generatePriceData(exchange: string, symbol: string): PriceData {
   const now = new Date();
   const last = 100 + Math.random() * 10;
@@ -49,17 +54,36 @@ export function generatePriceData(exchange: string, symbol: string): PriceData {
 }
 
 export function generateAllPriceData(): any[] {
-  const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
-  const symbols = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
   const data: any[] = [];
 
   exchanges.forEach(exchange => {
-    symbols.forEach(symbol => {
+    cryptoPairs.forEach(symbol => {
       data.push(generatePriceData(exchange, symbol));
     });
   });
 
   return data;
+}
+
+// Add getMostActivePairs function
+export function getMostActivePairs(priceData: any[]): string[] {
+  if (!priceData || priceData.length === 0) {
+    return cryptoPairs.slice(0, 5);
+  }
+
+  const volumeByPair: Record<string, number> = {};
+  
+  priceData.forEach(price => {
+    if (!volumeByPair[price.symbol]) {
+      volumeByPair[price.symbol] = 0;
+    }
+    volumeByPair[price.symbol] += price.volume || 0;
+  });
+  
+  return Object.entries(volumeByPair)
+    .sort(([, a], [, b]) => b - a)
+    .map(([pair]) => pair)
+    .slice(0, 5);
 }
 
 // Update to generateArbitrageOpportunities to include different arbitrage types
@@ -73,7 +97,6 @@ export function generateArbitrageOpportunities(
   
   if (strategyType === 'triangular') {
     // Generate triangular arbitrage opportunities
-    const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
     const triangularPaths = [
       {step1: 'BTC/USDT', step2: 'ETH/BTC', step3: 'ETH/USDT'},
       {step1: 'ETH/USDT', step2: 'XRP/ETH', step3: 'XRP/USDT'},
@@ -117,13 +140,11 @@ export function generateArbitrageOpportunities(
   } 
   else if (strategyType === 'statistical') {
     // Generate statistical arbitrage opportunities
-    const pairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
-    const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
     
     // Generate exchange combinations
     for (let i = 0; i < exchanges.length; i++) {
       for (let j = i + 1; j < exchanges.length; j++) {
-        pairs.forEach(pair => {
+        cryptoPairs.forEach(pair => {
           // Only create opportunity if random check passes (to avoid too many opportunities)
           if (Math.random() < 0.3) {
             const profitPercent = minProfit + Math.random() * 3;

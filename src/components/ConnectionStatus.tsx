@@ -20,13 +20,28 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-const ConnectionStatus = () => {
+type ConnectionStatusProps = {
+  state?: string;
+  lastHeartbeat?: Date;
+  connectionLogs?: string[];
+};
+
+const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ 
+  state: externalState,
+  lastHeartbeat: externalLastHeartbeat,
+  connectionLogs: externalLogs 
+}) => {
   const { connectionState, reconnect, connectionLogs, lastHeartbeatTime } = useWebSocket();
   const [isOpen, setIsOpen] = useState(false);
 
+  // Use external props if provided, otherwise use from hook
+  const actualState = externalState || connectionState;
+  const actualLastHeartbeat = externalLastHeartbeat || lastHeartbeatTime;
+  const actualLogs = externalLogs || connectionLogs;
+
   // Determine connection status styling
   const getConnectionStatusInfo = () => {
-    switch (connectionState) {
+    switch (actualState) {
       case 'connected':
         return {
           icon: <WifiIcon className="h-4 w-4" />,
@@ -66,8 +81,8 @@ const ConnectionStatus = () => {
   };
 
   const statusInfo = getConnectionStatusInfo();
-  const lastHeartbeat = lastHeartbeatTime 
-    ? new Date(lastHeartbeatTime).toLocaleTimeString() 
+  const lastHeartbeatFormatted = actualLastHeartbeat 
+    ? new Date(actualLastHeartbeat).toLocaleTimeString() 
     : 'No heartbeat received';
 
   return (
@@ -101,18 +116,18 @@ const ConnectionStatus = () => {
           <div className="bg-crypto-light-card/20 p-2 rounded-md">
             <h3 className="text-xs text-gray-400 mb-1">Last Heartbeat</h3>
             <div className="flex items-center">
-              {lastHeartbeatTime ? (
+              {actualLastHeartbeat ? (
                 <CheckCircleIcon className="h-3 w-3 text-green-500 mr-1" />
               ) : (
                 <XCircleIcon className="h-3 w-3 text-red-500 mr-1" />
               )}
-              <p className="text-sm">{lastHeartbeat}</p>
+              <p className="text-sm">{lastHeartbeatFormatted}</p>
             </div>
           </div>
           <div className="bg-crypto-light-card/20 p-2 rounded-md">
             <h3 className="text-xs text-gray-400 mb-1">Connection Type</h3>
             <p className="text-sm">
-              {connectionState === 'using-mock-data' ? 'Mock Data' : 'WebSocket'}
+              {actualState === 'using-mock-data' ? 'Mock Data' : 'WebSocket'}
             </p>
           </div>
         </div>
@@ -130,8 +145,8 @@ const ConnectionStatus = () => {
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-1">
             <div className="bg-crypto-light-card/10 rounded-md p-2 h-32 overflow-y-auto text-xs space-y-1">
-              {connectionLogs.length > 0 ? (
-                connectionLogs.map((log, index) => (
+              {actualLogs && actualLogs.length > 0 ? (
+                actualLogs.map((log, index) => (
                   <div 
                     key={index} 
                     className={cn(
