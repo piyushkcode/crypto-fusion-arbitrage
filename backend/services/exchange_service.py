@@ -1,4 +1,3 @@
-
 import ccxt
 import asyncio
 import websockets
@@ -162,6 +161,36 @@ class ExchangeService:
             # Sleep for 5 seconds before next update
             await asyncio.sleep(5)
 
+    def subscribe_to_pair(self, pair):
+        """Subscribe to updates for a specific trading pair."""
+        # Logic to handle subscription for the specified pair
+        logger.info(f'Subscribed to updates for pair: {pair}')
+        # Logic to send updates for this pair
+        async def send_updates():
+            while True:
+                # Fetch the latest ticker data for the subscribed pair
+                try:
+                    ticker = self.binance.fetch_ticker(pair)  # Example for Binance
+                    message = {
+                        'exchange': 'Binance',
+                        'symbol': pair,
+                        'last': ticker['last'],
+                        'bid': ticker['bid'],
+                        'ask': ticker['ask'],
+                        'volume': ticker['quoteVolume'],
+                        'change24h': ticker['percentage'],
+                        'timestamp': datetime.now().isoformat()
+                    }
+                    await self.broadcast({'type': 'ticker_update', 'data': message})
+                except Exception as e:
+                    logger.error(f"Error fetching ticker for {pair}: {str(e)}")
+                
+                await asyncio.sleep(5)  # Adjust the frequency of updates as needed
+
+        # Start sending updates in the background
+        asyncio.create_task(send_updates())
+        # Here you can implement the logic to start sending updates for this pair
+
     async def start_websocket_server(self, websocket, path):
         """Handle WebSocket connections"""
         await self.register_client(websocket)
@@ -176,28 +205,14 @@ class ExchangeService:
         finally:
             await self.unregister_client(websocket)
 
-    async def fetch_all_data():
-    tasks = [self.fetch_binance(), self.fetch_kucoin(),self.fetch_bybit,self.fetch_okx()]
-    return await asyncio.gather(*tasks)
+    async def fetch_all_data(self):
+        tasks = [self.fetch_binance(), self.fetch_kucoin(), self.fetch_bybit(), self.fetch_okx()]
+        return await asyncio.gather(*tasks)
 
-    async for message in websocket:
-    data = json.loads(message)
-    if data.get('type') == 'ping':
-        await websocket.send(json.dumps({'type': 'pong'}))
-    elif data.get('type') == 'subscribe':
-        # Handle subscription
-        pass
-        
     def start(self):
         """Start the WebSocket server and data fetching"""
-        loop = asyncio.get_event_loop()
-        
-        # Start WebSocket server
-        start_server = websockets.serve(self.start_websocket_server, '0.0.0.0', 8765)
-        
-        # Schedule ticker data fetching
-        loop.create_task(self.fetch_ticker_data())
-        
-        # Start the server
-        loop.run_until_complete(start_server)
-        loop.run_forever()
+        async def run():
+            start_server = await websockets.serve(self.start_websocket_server, '0.0.0.0', 8765)
+            await start_server.wait_closed()  # Wait until the server is closed
+
+        asyncio.run(run())

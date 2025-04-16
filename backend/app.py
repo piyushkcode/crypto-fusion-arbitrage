@@ -45,7 +45,13 @@ def handle_disconnect():
 @socketio.on('subscribe_tickers')
 def handle_subscribe_tickers(data):
     logger.info(f'Client subscribed to tickers: {data}')
-    # Data will be sent via the WebSocket server
+    # Here we can implement logic to send ticker updates to the client
+    # For example, we can call a method from the exchange_service to start sending updates
+    if 'pair' in data:
+        # Subscribe to specific trading pair updates
+        exchange_service.subscribe_to_pair(data['pair'])
+    else:
+        logger.warning('No trading pair specified for subscription.')
 
 # REST API endpoints
 @app.route('/api/exchanges', methods=['GET'])
