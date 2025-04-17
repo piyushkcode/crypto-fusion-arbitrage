@@ -9,6 +9,7 @@ export interface PriceData {
   volume: number;
   change24h: number;
   timestamp: Date;
+  price?: number; // Added to make TickerData compatible
 }
 
 export interface ArbitrageOpportunity {
@@ -97,7 +98,8 @@ export function generatePriceData(exchange: string, symbol: string): PriceData {
     ask,
     volume,
     change24h,
-    timestamp: now
+    timestamp: now,
+    price: last // Ensure price field is populated for TickerData compatibility
   };
 }
 
@@ -133,7 +135,7 @@ export function getMostActivePairs(priceData: PriceData[]): string[] {
 }
 
 export function generateArbitrageOpportunities(
-  priceData: any[], 
+  priceData: PriceData[], 
   minProfit: number = 0.5, 
   strategyType: string = 'simple'
 ): ArbitrageOpportunity[] {
@@ -144,7 +146,7 @@ export function generateArbitrageOpportunities(
   }
   
   // Group price data by symbol
-  const pricesBySymbol: Record<string, any[]> = {};
+  const pricesBySymbol: Record<string, PriceData[]> = {};
   
   for (const data of priceData) {
     const symbol = data.symbol || 'BTC/USDT';
@@ -165,8 +167,8 @@ export function generateArbitrageOpportunities(
           
           const buyExchange = prices[i].exchange;
           const sellExchange = prices[j].exchange;
-          const buyPrice = prices[i].last || prices[i].price;
-          const sellPrice = prices[j].last || prices[j].price;
+          const buyPrice = prices[i].last || prices[i].price || 0;
+          const sellPrice = prices[j].last || prices[j].price || 0;
           
           // Calculate profit percentage
           const profitPercent = ((sellPrice - buyPrice) / buyPrice) * 100;
@@ -203,15 +205,17 @@ export function generateArbitrageOpportunities(
           opportunities.push({
             id: `triangular-${exchange}-${symbol}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
             pair: symbol,
-            exchange,
-            profitPercent,
+            buyExchange: exchange, // Ensure we have buyExchange
+            sellExchange: exchange, // Ensure we have sellExchange
             buyPrice: 0,
             sellPrice: 0,
+            profitPercent,
             timestamp: new Date(),
             status: Math.random() > 0.6 ? 'active' : (Math.random() > 0.5 ? 'executed' : 'expired'),
             type: 'triangular',
             path: `${symbol.split('/')[0]} → BTC → ${symbol.split('/')[1]}`,
-            finalAmount: 1 + (profitPercent / 100)
+            finalAmount: 1 + (profitPercent / 100),
+            exchange
           });
         }
       }

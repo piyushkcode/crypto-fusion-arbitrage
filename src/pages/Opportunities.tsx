@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ArbitrageOpportunities from '@/components/ArbitrageOpportunities';
 import ArbitrageType from '@/components/ArbitrageType';
-import { generateAllPriceData, generateArbitrageOpportunities } from '@/utils/mockData';
+import { generateAllPriceData, generateArbitrageOpportunities, PriceData } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
@@ -18,7 +17,7 @@ const Opportunities = () => {
   const { toast } = useToast();
   const { minProfit } = useTradingContext();
   const { connectionState, tickerData } = useWebSocket();
-  const [priceData, setPriceData] = useState(generateAllPriceData());
+  const [priceData, setPriceData] = useState<PriceData[]>(generateAllPriceData());
   const [opportunities, setOpportunities] = useState(generateArbitrageOpportunities(priceData, minProfit));
   const [isLoading, setIsLoading] = useState(false);
   const [localMinProfit, setLocalMinProfit] = useState(0.5);
@@ -29,6 +28,7 @@ const Opportunities = () => {
   // Effect to update opportunities when new ticker data arrives
   useEffect(() => {
     if (tickerData && tickerData.length > 0) {
+      // tickerData is already in PriceData format after our useWebSocket update
       setPriceData(tickerData);
       fetchOpportunities();
     }
