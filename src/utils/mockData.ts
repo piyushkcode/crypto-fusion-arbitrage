@@ -1,4 +1,3 @@
-
 export interface PriceData {
   exchange: string;
   symbol: string;
@@ -33,22 +32,66 @@ export interface ArbitrageOpportunity {
 export const cryptoPairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
 export const exchanges = ['Binance', 'KuCoin', 'Bybit', 'OKX'];
 
+// Base prices for each pair (Binance data as reference)
+const basePrices = {
+  'BTC/USDT': 85138,
+  'ETH/USDT': 1612.87,
+  'XRP/USDT': 2.10,
+  'SOL/USDT': 135.43,
+  'ADA/USDT': 0.6289
+};
+
+// Special prices for Bybit (when available)
+const bybitPrices = {
+  'BTC/USDT': 97500,
+  'ETH/USDT': 2656,
+  'XRP/USDT': 2.35,
+  'SOL/USDT': 206.28,
+  'ADA/USDT': 0.6289  // Using Binance price as fallback
+};
+
 export function generatePriceData(exchange: string, symbol: string): PriceData {
   const now = new Date();
-  const last = 100 + Math.random() * 10;
-  const bid = last - Math.random() * 0.1;
-  const ask = last + Math.random() * 0.1;
-  const volume = 1000 + Math.random() * 100;
-  const change24h = Math.random() * 2 - 1;
+  let basePrice: number;
+  
+  // Select base price based on exchange
+  if (exchange === 'Bybit') {
+    basePrice = bybitPrices[symbol];
+  } else {
+    basePrice = basePrices[symbol];
+  }
+  
+  // Add small random variation (±0.5%) for different exchanges
+  const variationPercent = (Math.random() * 1 - 0.5) / 100;
+  const last = basePrice * (1 + variationPercent);
+  
+  // Generate bid and ask with tight spread
+  const spreadPercent = 0.0002; // 0.02% spread
+  const bid = last * (1 - spreadPercent);
+  const ask = last * (1 + spreadPercent);
+  
+  // Generate realistic volume
+  const baseVolume = {
+    'BTC/USDT': 1000,
+    'ETH/USDT': 5000,
+    'XRP/USDT': 20000,
+    'SOL/USDT': 8000,
+    'ADA/USDT': 50000
+  }[symbol] || 1000;
+  
+  const volume = baseVolume * (0.8 + Math.random() * 0.4); // ±20% volume variation
+  
+  // Calculate 24h change (between -2% and +2%)
+  const change24h = (Math.random() * 4 - 2);
 
   return {
-    exchange: exchange,
-    symbol: symbol,
-    last: last,
-    bid: bid,
-    ask: ask,
-    volume: volume,
-    change24h: change24h,
+    exchange,
+    symbol,
+    last,
+    bid,
+    ask,
+    volume,
+    change24h,
     timestamp: now
   };
 }
