@@ -1,12 +1,66 @@
 
+// Define types for our data structures
+export interface PriceData {
+  exchange: string;
+  symbol: string;
+  last: number;
+  bid: number;
+  ask: number;
+  volume: number;
+  change24h: number;
+  timestamp: Date;
+}
+
+export interface ArbitrageOpportunity {
+  id: string;
+  pair: string;
+  buyExchange: string;
+  sellExchange: string;
+  buyPrice: number;
+  sellPrice: number;
+  priceDiff?: number;
+  profitPercent: number;
+  timestamp: Date;
+  status: 'active' | 'executed' | 'expired';
+  type?: string;
+  exchange?: string;
+  path?: string;
+  finalAmount?: number;
+  zScore?: number;
+}
+
+// Define base prices for different cryptocurrencies
+const basePrices: Record<string, number> = {
+  'BTC/USDT': 85138, 
+  'ETH/USDT': 1612.87,
+  'XRP/USDT': 2.10,
+  'SOL/USDT': 135.43,
+  'ADA/USDT': 0.6289
+};
+
+// Price overrides for Bybit (based on the specific prices provided)
+const bybitPrices: Record<string, number> = {
+  'BTC/USDT': 85138 * 1.01, // Only slightly higher (1%)
+  'ETH/USDT': 1612.87 * 1.02,
+  'XRP/USDT': 2.10 * 1.02,
+  'SOL/USDT': 135.43 * 1.03,
+  'ADA/USDT': 0.6289 * 1.015
+};
+
+// Define list of exchanges
+export const exchanges = ['Binance', 'Bybit', 'KuCoin', 'OKX'];
+
+// Define cryptocurrency pairs
+export const cryptoPairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
+
 export function generatePriceData(exchange: string, symbol: string): PriceData {
   const now = new Date();
   let basePrice: number;
   
   // Select base price based on exchange with more subtle variations
   if (exchange === 'Bybit') {
-    // Reduce the price difference, now only about 2-3% different from Binance
-    basePrice = basePrices[symbol] * (1 + (Math.random() * 0.03 - 0.015));
+    // Reduce the price difference, now only about 1-3% different from Binance
+    basePrice = bybitPrices[symbol] || basePrices[symbol] * (1 + (Math.random() * 0.03 - 0.015));
   } else {
     basePrice = basePrices[symbol];
   }
@@ -45,4 +99,156 @@ export function generatePriceData(exchange: string, symbol: string): PriceData {
     change24h,
     timestamp: now
   };
+}
+
+export function generateAllPriceData(): PriceData[] {
+  const allPriceData: PriceData[] = [];
+  
+  // For each exchange and symbol combination
+  for (const exchange of exchanges) {
+    for (const symbol of cryptoPairs) {
+      allPriceData.push(generatePriceData(exchange, symbol));
+    }
+  }
+  
+  return allPriceData;
+}
+
+export function getMostActivePairs(priceData: PriceData[]): string[] {
+  // Find pairs with highest volume
+  const volumeByPair: Record<string, number> = {};
+  
+  for (const data of priceData) {
+    if (!volumeByPair[data.symbol]) {
+      volumeByPair[data.symbol] = 0;
+    }
+    volumeByPair[data.symbol] += data.volume;
+  }
+  
+  // Sort pairs by volume and take top 5
+  return Object.entries(volumeByPair)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([pair]) => pair);
+}
+
+export function generateArbitrageOpportunities(
+  priceData: any[], 
+  minProfit: number = 0.5, 
+  strategyType: string = 'simple'
+): ArbitrageOpportunity[] {
+  const opportunities: ArbitrageOpportunity[] = [];
+  
+  if (!priceData || priceData.length === 0) {
+    return opportunities;
+  }
+  
+  // Group price data by symbol
+  const pricesBySymbol: Record<string, any[]> = {};
+  
+  for (const data of priceData) {
+    const symbol = data.symbol || 'BTC/USDT';
+    if (!pricesBySymbol[symbol]) {
+      pricesBySymbol[symbol] = [];
+    }
+    pricesBySymbol[symbol].push(data);
+  }
+  
+  // For each symbol, find arbitrage opportunities
+  for (const [symbol, prices] of Object.entries(pricesBySymbol)) {
+    // For simple cross-exchange arbitrage
+    if (strategyType === 'simple' || strategyType === 'all') {
+      // Find min and max prices across exchanges
+      for (let i = 0; i < prices.length; i++) {
+        for (let j = 0; j < prices.length; j++) {
+          if (i === j) continue;
+          
+          const buyExchange = prices[i].exchange;
+          const sellExchange = prices[j].exchange;
+          const buyPrice = prices[i].last || prices[i].price;
+          const sellPrice = prices[j].last || prices[j].price;
+          
+          // Calculate profit percentage
+          const profitPercent = ((sellPrice - buyPrice) / buyPrice) * 100;
+          
+          // Add opportunity if profit meets minimum threshold
+          if (profitPercent >= minProfit) {
+            opportunities.push({
+              id: `${symbol}-${buyExchange}-${sellExchange}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+              pair: symbol,
+              buyExchange,
+              sellExchange,
+              buyPrice,
+              sellPrice,
+              priceDiff: sellPrice - buyPrice,
+              profitPercent,
+              timestamp: new Date(),
+              status: Math.random() > 0.7 ? 'active' : (Math.random() > 0.5 ? 'executed' : 'expired'),
+              type: 'simple'
+            });
+          }
+        }
+      }
+    }
+    
+    // Add some triangular arbitrage opportunities
+    if (strategyType === 'triangular' || strategyType === 'all') {
+      const exchanges = [...new Set(prices.map(p => p.exchange))];
+      
+      for (const exchange of exchanges) {
+        // Simulate a triangular arbitrage opportunity
+        if (Math.random() > 0.7) {
+          const profitPercent = minProfit + Math.random() * 2;
+          
+          opportunities.push({
+            id: `triangular-${exchange}-${symbol}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+            pair: symbol,
+            exchange,
+            profitPercent,
+            buyPrice: 0,
+            sellPrice: 0,
+            timestamp: new Date(),
+            status: Math.random() > 0.6 ? 'active' : (Math.random() > 0.5 ? 'executed' : 'expired'),
+            type: 'triangular',
+            path: `${symbol.split('/')[0]} → BTC → ${symbol.split('/')[1]}`,
+            finalAmount: 1 + (profitPercent / 100)
+          });
+        }
+      }
+    }
+    
+    // Add some statistical arbitrage opportunities
+    if (strategyType === 'statistical' || strategyType === 'all') {
+      const exchangePairs = [
+        ['Binance', 'Bybit'],
+        ['KuCoin', 'OKX'],
+        ['Binance', 'KuCoin'],
+        ['Bybit', 'OKX']
+      ];
+      
+      for (const [exchange1, exchange2] of exchangePairs) {
+        if (Math.random() > 0.7) {
+          const profitPercent = minProfit + Math.random() * 1.5;
+          const zScore = (Math.random() * 4 - 2).toFixed(2);
+          
+          opportunities.push({
+            id: `stat-${exchange1}-${exchange2}-${symbol}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+            pair: symbol,
+            buyExchange: exchange1,
+            sellExchange: exchange2,
+            buyPrice: prices[0]?.last * 0.995 || 100,
+            sellPrice: prices[0]?.last * 1.005 || 101,
+            profitPercent,
+            timestamp: new Date(),
+            status: Math.random() > 0.6 ? 'active' : (Math.random() > 0.5 ? 'executed' : 'expired'),
+            type: 'statistical',
+            zScore: parseFloat(zScore)
+          });
+        }
+      }
+    }
+  }
+  
+  // Sort by profit percentage in descending order
+  return opportunities.sort((a, b) => b.profitPercent - a.profitPercent);
 }

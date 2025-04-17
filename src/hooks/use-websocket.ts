@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { generateAllPriceData } from '@/utils/mockData';
+import { generateAllPriceData, PriceData } from '@/utils/mockData';
 
 interface TickerData {
   exchange: string;
@@ -23,7 +23,13 @@ export function useWebSocket() {
     
     // Set initial mock data using the correct function from mockData.ts
     const initialMockData = generateAllPriceData();
-    setTickerData(initialMockData);
+    const formattedData = initialMockData.map(item => ({
+      exchange: item.exchange,
+      symbol: item.symbol,
+      price: item.last,
+      timestamp: new Date().toISOString()
+    }));
+    setTickerData(formattedData);
     
     // Update mock data periodically to simulate real-time updates
     const interval = setInterval(() => {
