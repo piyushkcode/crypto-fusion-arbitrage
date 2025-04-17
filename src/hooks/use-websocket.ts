@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { generateAllPriceData } from '@/utils/mockData';
 
@@ -23,7 +24,12 @@ export const useWebSocket = () => {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 3;
+  const maxReconnectAttempts = 5; // Increased from 3 to 5
+  
+  // Immediately initialize with mock data while attempting to connect
+  useEffect(() => {
+    setTickerData(generateAllPriceData());
+  }, []);
 
   // Add a log with timestamp
   const addConnectionLog = useCallback((message: string, level: 'info' | 'warn' | 'error' = 'info') => {
@@ -80,77 +86,6 @@ export const useWebSocket = () => {
     }
   }, [connectionState, lastHeartbeatTime, closeWebSocket, addConnectionLog]);
 
-  const initializeConnection = useCallback(() => {
-    // Clear any existing connection
-    closeWebSocket();
-    
-    try {
-      addConnectionLog(`Attempting to connect to WebSocket server at: ${WS_URL}`, 'info');
-      setConnectionState('connecting');
-      
-      const socket = new WebSocket(WS_URL);
-      websocketRef.current = socket;
-
-      socket.addEventListener('open', () => {
-        addConnectionLog('WebSocket connected successfully', 'info');
-        setConnectionState('connected');
-        reconnectAttempts.current = 0;
-        
-        // Subscribe to ticker updates
-        socket.send(JSON.stringify({
-          type: 'subscribe',
-          channel: 'tickers',
-        }));
-        
-        // Set up heartbeat interval (every 15 seconds)
-        heartbeatIntervalRef.current = setInterval(() => {
-          sendHeartbeat();
-          
-          // Check connection health
-          checkConnectionHealth();
-        }, 15000);
-      });
-
-      socket.addEventListener('message', (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          setLastMessage(message);
-          
-          // Handle pong response
-          if (message.type === 'pong') {
-            setLastHeartbeatTime(new Date());
-            addConnectionLog('Received pong heartbeat', 'info');
-            return;
-          }
-          
-          // Handle ticker updates
-          if (message.type === 'ticker_update') {
-            setTickerData(message.data);
-          }
-        } catch (error) {
-          addConnectionLog(`Error parsing WebSocket message: ${error}`, 'error');
-        }
-      });
-
-      socket.addEventListener('close', (event) => {
-        addConnectionLog(`WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason || 'Unknown'}`, 'warn');
-        setConnectionState('disconnected');
-        attemptReconnect();
-      });
-
-      socket.addEventListener('error', (event) => {
-        addConnectionLog(`WebSocket error: ${event}`, 'error');
-        setConnectionState('error');
-        attemptReconnect();
-      });
-
-    } catch (error) {
-      addConnectionLog(`Error initializing WebSocket: ${error}`, 'error');
-      setConnectionState('error');
-      attemptReconnect();
-    }
-  }, [closeWebSocket, sendHeartbeat, checkConnectionHealth, addConnectionLog]);
-
   const attemptReconnect = useCallback(() => {
     if (reconnectAttempts.current < maxReconnectAttempts) {
       const attempt = reconnectAttempts.current + 1;
@@ -170,10 +105,153 @@ export const useWebSocket = () => {
     } else {
       addConnectionLog('Max reconnect attempts reached. Using mock data.', 'warn');
       setConnectionState('using-mock-data');
-      // Use mock data as fallback
+      
+      // Use mock data as fallback and update it periodically
       setTickerData(generateAllPriceData());
+      
+      // Try again periodically (every 60 seconds) in case the server comes back online
+      setTimeout(() => {
+        reconnectAttempts.current = 0; // Reset counter to try again
+        initializeConnection();
+      }, 60000); // Try again after 1 minute
     }
-  }, [initializeConnection, addConnectionLog]);
+  }, [addConnectionLog]);
+
+  const initializeConnection = useCallback(() => {
+    // Clear any existing connection
+    closeWebSocket();
+    
+    try {
+      // Try the backend API WebSocket first
+      const backendWS = 'ws://localhost:9000';
+      addConnectionLog(`Attempting to connect to backend WebSocket server at: ${backendWS}`, 'info');
+      setConnectionState('connecting');
+      
+      const socket = new WebSocket(backendWS);
+      websocketRef.current = socket;
+
+      socket.addEventListener('open', () => {
+        addConnectionLog('WebSocket connected successfully', 'info');
+        setConnectionState('connected');
+        reconnectAttempts.current = 0;
+        
+        // Subscribe to ticker updates
+        socket.send(JSON.stringify({
+          type: 'subscribe',
+          channel: 'tickers',
+        }));
+        
+        // Set up heartbeat interval (every 15 seconds)
+        heartbeatIntervalRef.current = setInterval(() => {
+          sendHeartbeat();
+          checkConnectionHealth();
+        }, 15000);
+      });
+
+      socket.addEventListener('message', (event) => {
+        try {
+          const message: WebSocketMessage = JSON.parse(event.data);
+          setLastMessage(message);
+          
+          // Handle pong response
+          if (message.type === 'pong') {
+            setLastHeartbeatTime(new Date());
+            addConnectionLog('Received pong heartbeat', 'info');
+            return;
+          }
+          
+          // Handle ticker updates
+          if (message.type === 'ticker_update' && Array.isArray(message.data)) {
+            // Transform data to match expected format if needed
+            const formattedData = message.data.map(item => ({
+              exchange: item.exchange,
+              pair: item.symbol,
+              price: item.last || item.price,
+              volume: item.volume || 0,
+              change24h: item.change24h || 0
+            }));
+            
+            setTickerData(formattedData);
+            addConnectionLog(`Received ticker data with ${formattedData.length} items`, 'info');
+          }
+        } catch (error) {
+          addConnectionLog(`Error parsing WebSocket message: ${error}`, 'error');
+        }
+      });
+
+      socket.addEventListener('close', (event) => {
+        addConnectionLog(`WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason || 'Unknown'}`, 'warn');
+        setConnectionState('disconnected');
+        
+        // Try alternative connection or fallback to mock data
+        tryFallbackConnection();
+      });
+
+      socket.addEventListener('error', (event) => {
+        addConnectionLog(`WebSocket error: ${event}`, 'error');
+        setConnectionState('error');
+        
+        // Close the socket to trigger the close event
+        socket.close();
+      });
+
+    } catch (error) {
+      addConnectionLog(`Error initializing WebSocket: ${error}`, 'error');
+      setConnectionState('error');
+      
+      // Try alternative connection or fallback to mock data
+      tryFallbackConnection();
+    }
+  }, [closeWebSocket, sendHeartbeat, checkConnectionHealth, addConnectionLog]);
+
+  // Try fallback connection to WS_URL if backend WebSocket fails
+  const tryFallbackConnection = useCallback(() => {
+    try {
+      addConnectionLog(`Attempting fallback connection to: ${WS_URL}`, 'info');
+      
+      const socket = new WebSocket(WS_URL);
+      websocketRef.current = socket;
+      
+      socket.addEventListener('open', () => {
+        addConnectionLog('Fallback WebSocket connected successfully', 'info');
+        setConnectionState('connected');
+        
+        // Set up heartbeat interval
+        heartbeatIntervalRef.current = setInterval(sendHeartbeat, 15000);
+      });
+      
+      socket.addEventListener('message', (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setLastMessage(data);
+          
+          if (Array.isArray(data)) {
+            setTickerData(data);
+          } else if (data.data && Array.isArray(data.data)) {
+            setTickerData(data.data);
+          }
+        } catch (error) {
+          addConnectionLog(`Error parsing fallback message: ${error}`, 'error');
+        }
+      });
+      
+      socket.addEventListener('close', () => {
+        addConnectionLog('Fallback WebSocket disconnected', 'warn');
+        setConnectionState('disconnected');
+        attemptReconnect();
+      });
+      
+      socket.addEventListener('error', () => {
+        addConnectionLog('Fallback WebSocket error', 'error');
+        setConnectionState('error');
+        socket.close();
+      });
+      
+    } catch (error) {
+      addConnectionLog(`Error with fallback connection: ${error}`, 'error');
+      attemptReconnect();
+    }
+  }, [addConnectionLog, sendHeartbeat, attemptReconnect]);
 
   // Initialize connection on component mount
   useEffect(() => {
@@ -194,11 +272,12 @@ export const useWebSocket = () => {
     if (connectionState === 'using-mock-data') {
       const interval = setInterval(() => {
         setTickerData(generateAllPriceData());
+        addConnectionLog('Updated mock price data', 'info');
       }, 5000);
       
       return () => clearInterval(interval);
     }
-  }, [connectionState]);
+  }, [connectionState, addConnectionLog]);
 
   return {
     connectionState,

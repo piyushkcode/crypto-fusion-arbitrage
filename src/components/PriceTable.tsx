@@ -13,10 +13,11 @@ import { cn } from '@/lib/utils';
 
 interface PriceData {
   exchange: string;
-  pair: string;
+  pair?: string;
+  symbol?: string;
   price: number;
-  volume: number;
-  change24h: number;
+  volume?: number;
+  change24h?: number;
 }
 
 interface PriceTableProps {
@@ -27,6 +28,15 @@ interface PriceTableProps {
 const PriceTable: React.FC<PriceTableProps> = ({ data, title }) => {
   // Ensure data is an array even if undefined is passed
   const safeData = Array.isArray(data) ? data : [];
+  
+  // Normalize data to handle both symbol and pair properties
+  const normalizedData = safeData.map(item => ({
+    exchange: item.exchange || "Unknown",
+    pair: item.pair || item.symbol || "Unknown",
+    price: item.price || 0,
+    volume: item.volume || 0,
+    change24h: item.change24h || 0
+  }));
 
   return (
     <div className="rounded-lg bg-crypto-card p-4 shadow-md">
@@ -43,10 +53,10 @@ const PriceTable: React.FC<PriceTableProps> = ({ data, title }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {safeData.length > 0 ? (
-              safeData.map((item, index) => (
+            {normalizedData.length > 0 ? (
+              normalizedData.map((item, index) => (
                 <TableRow 
-                  key={index} 
+                  key={`${item.exchange}-${item.pair}-${index}`} 
                   className="border-b border-gray-800 hover:bg-crypto-light-card/50"
                 >
                   <TableCell className="font-medium">{item.exchange}</TableCell>
@@ -57,7 +67,7 @@ const PriceTable: React.FC<PriceTableProps> = ({ data, title }) => {
                       : "N/A"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {item.volume !== undefined && !isNaN(item.volume)
+                    {item.volume !== undefined && !isNaN(item.volume) && item.volume > 0
                       ? (item.volume >= 1000000 
                           ? `$${(item.volume / 1000000).toFixed(2)}M` 
                           : `$${(item.volume / 1000).toFixed(0)}K`)
@@ -67,7 +77,7 @@ const PriceTable: React.FC<PriceTableProps> = ({ data, title }) => {
                     "text-right flex items-center justify-end",
                     item.change24h > 0 ? "text-crypto-green" : "text-crypto-red"
                   )}>
-                    {item.change24h !== undefined ? (
+                    {item.change24h !== undefined && !isNaN(item.change24h) ? (
                       <>
                         {item.change24h > 0 ? (
                           <ArrowUpIcon className="mr-1 h-4 w-4" />
