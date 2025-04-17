@@ -1,4 +1,3 @@
-
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -162,13 +161,17 @@ def get_connection_status():
 
 def start_websocket_thread():
     """Start the WebSocket server in a separate thread"""
-    exchange_service.start()
+    try:
+        exchange_service.start()
+    except Exception as e:
+        logger.error(f"Error starting WebSocket server: {str(e)}")
 
 if __name__ == '__main__':
     # Start WebSocket server in a background thread
-    websocket_thread = threading.Thread(target=start_websocket_thread)
-    websocket_thread.daemon = True
-    websocket_thread.start()
+    if not hasattr(app, 'websocket_thread'):
+        app.websocket_thread = threading.Thread(target=start_websocket_thread)
+        app.websocket_thread.daemon = True
+        app.websocket_thread.start()
     
     # Start the Flask app with SocketIO
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
