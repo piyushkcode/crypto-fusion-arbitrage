@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { mockPriceData } from '@/utils/mockData';
+import { generateAllPriceData } from '@/utils/mockData';
 
 interface TickerData {
   exchange: string;
@@ -14,20 +14,23 @@ export function useWebSocket() {
   const [connectionState, setConnectionState] = useState<string>('using-mock-data');
   const [connectionLogs, setConnectionLogs] = useState<string[]>([]);
   const [lastHeartbeatTime, setLastHeartbeatTime] = useState<Date | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false); // Added missing isConnected state
 
   useEffect(() => {
     // Log that we're using mock data
     const mockLog = '[INFO] Using mock data instead of WebSocket connection';
     setConnectionLogs(prev => [...prev, mockLog]);
     
-    // Set initial mock data
-    setTickerData(mockPriceData);
+    // Set initial mock data using the correct function from mockData.ts
+    const initialMockData = generateAllPriceData();
+    setTickerData(initialMockData);
     
     // Update mock data periodically to simulate real-time updates
     const interval = setInterval(() => {
-      const updatedMockData = mockPriceData.map(item => ({
-        ...item,
-        price: item.price * (1 + (Math.random() * 0.02 - 0.01)), // Random price fluctuation ±1%
+      const updatedMockData = generateAllPriceData().map(item => ({
+        exchange: item.exchange,
+        symbol: item.symbol,
+        price: item.last, // Use the 'last' property which exists in the generated data
         timestamp: new Date().toISOString()
       }));
       setTickerData(updatedMockData);
@@ -50,6 +53,7 @@ export function useWebSocket() {
     connectionState,
     connectionLogs,
     lastHeartbeatTime,
-    reconnect
+    reconnect,
+    isConnected // Return the isConnected state
   };
 }
