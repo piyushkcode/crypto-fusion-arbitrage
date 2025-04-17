@@ -9,7 +9,7 @@ export interface PriceData {
   volume: number;
   change24h: number;
   timestamp: Date;
-  price?: number; // Added to make TickerData compatible
+  price: number; // Changed from optional to required
 }
 
 export interface ArbitrageOpportunity {
@@ -99,7 +99,7 @@ export function generatePriceData(exchange: string, symbol: string): PriceData {
     volume,
     change24h,
     timestamp: now,
-    price: last // Ensure price field is populated for TickerData compatibility
+    price: last // Always set price equal to last
   };
 }
 

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { PriceData } from '@/utils/mockData';
+import { PriceData, generateAllPriceData } from '@/utils/mockData';
 
 interface TickerData {
   exchange: string;
@@ -25,25 +25,20 @@ export function useWebSocket() {
     const mockLog = '[INFO] Using mock data instead of WebSocket connection';
     setConnectionLogs(prev => [...prev, mockLog]);
     
-    // Import mock data generator function dynamically to avoid circular imports
-    import('@/utils/mockData').then(({ generateAllPriceData }) => {
-      // Set initial mock data
-      const initialMockData = generateAllPriceData();
-      setTickerData(initialMockData);
+    // Set initial mock data
+    const initialMockData = generateAllPriceData();
+    setTickerData(initialMockData);
+    
+    // Update mock data periodically to simulate real-time updates
+    const interval = setInterval(() => {
+      const updatedMockData = generateAllPriceData();
+      setTickerData(updatedMockData);
       
-      // Update mock data periodically to simulate real-time updates
-      const interval = setInterval(() => {
-        import('@/utils/mockData').then(({ generateAllPriceData }) => {
-          const updatedMockData = generateAllPriceData();
-          setTickerData(updatedMockData);
-          
-          // Simulate heartbeat
-          setLastHeartbeatTime(new Date());
-        });
-      }, 5000);
-      
-      return () => clearInterval(interval);
-    });
+      // Simulate heartbeat
+      setLastHeartbeatTime(new Date());
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
   
   // Function to simulate reconnection
