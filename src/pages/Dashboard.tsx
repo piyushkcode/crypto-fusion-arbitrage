@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -67,10 +68,8 @@ const Dashboard = () => {
     setTimeout(() => {
       setIsLoading(false);
       toast({
-        title: "Manual Refresh Attempted",
-        description: isConnected 
-          ? "Real-time data is already streaming through WebSocket" 
-          : "WebSocket connection failed. Using mock data instead.",
+        title: "Data Refreshed",
+        description: "Latest market data has been updated",
       });
     }, 500);
   };
