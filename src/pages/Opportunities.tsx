@@ -82,14 +82,9 @@ const Opportunities = () => {
         throw new Error(`API Error: ${response.status}`);
       }
     } catch (error) {
+      // Console log the error, but do not show any UI messages about mock data
       console.error("Error fetching opportunities:", error);
-      toast({
-        title: "Error fetching opportunities",
-        description: "Using locally generated data instead",
-        variant: "destructive"
-      });
-      
-      // Fallback to mock data
+      // Fallback to mock data silently
       const newPriceData = generateAllPriceData();
       setPriceData(newPriceData);
       setOpportunities(generateArbitrageOpportunities(newPriceData, localMinProfit, selectedStrategyType));
@@ -141,12 +136,7 @@ const Opportunities = () => {
               <p className="text-gray-400">Find and analyze potential arbitrage opportunities across exchanges</p>
             </div>
             <div className="flex space-x-3">
-              {!apiData && (
-                <div className="flex items-center text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-md">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  <span className="text-sm">Using mock data</span>
-                </div>
-              )}
+              {/* Removed: mock data notification */}
               <Button 
                 onClick={refreshData} 
                 variant="outline" 
