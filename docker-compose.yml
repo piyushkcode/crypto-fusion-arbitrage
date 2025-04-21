@@ -34,7 +34,7 @@ services:
     image: timescale/timescaledb:latest-pg14
     container_name: crypto_timescaledb
     ports:
-      - "5433:5432"
+      - "5433:5432"  # Map to port 5433 on host to avoid conflict with postgres
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     environment:
@@ -71,7 +71,12 @@ services:
       - FLASK_ENV=development
       - MONGO_URI=mongodb://admin:password@mongodb:27017/
       - POSTGRES_URI=postgresql://postgres:your_password@postgres:5432/crypto_arbitrage
-      - TIMESCALE_URI=postgresql://postgres:your_password@timescaledb:5433/timescale_db
+      - TIMESCALE_URI=postgresql://postgres:your_password@timescaledb:5432/timescale_db
+      - TIMESCALE_HOST=timescaledb
+      - TIMESCALE_PORT=5432  # Internal port inside the container
+      - TIMESCALE_DB=timescale_db
+      - TIMESCALE_USER=postgres
+      - TIMESCALE_PASSWORD=your_password
       - REDIS_URI=redis://redis:6379/0
     restart: unless-stopped
 
