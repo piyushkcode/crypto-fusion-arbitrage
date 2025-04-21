@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTradingContext } from '@/contexts/TradingContext';
 import { generateArbitrageOpportunities, getMostActivePairs, cryptoPairs } from '@/utils/mockData';
 import { useWebSocket } from '@/hooks/use-websocket';
+import AIPredictionChart from "@/components/AIPredictionChart";
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -95,6 +96,8 @@ const Dashboard = () => {
     return `${Math.floor(diffInSeconds / 3600)} hours ago`;
   };
 
+  const [predictionView, setPredictionView] = useState<"live" | "ai">("live");
+
   return (
     <div className="min-h-screen bg-crypto-dark text-white">
       <Header />
@@ -106,6 +109,31 @@ const Dashboard = () => {
             <p className="text-gray-400">Monitor real-time prices and arbitrage opportunities</p>
           </div>
           
+          <div className="mb-6">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setPredictionView("live")}
+                className={`px-3 py-1 rounded ${
+                  predictionView === "live"
+                    ? "bg-crypto-purple text-white"
+                    : "bg-crypto-light-card/30 text-gray-300 hover:bg-crypto-light-card/50"
+                }`}
+              >
+                Live
+              </button>
+              <button
+                onClick={() => setPredictionView("ai")}
+                className={`px-3 py-1 rounded ${
+                  predictionView === "ai"
+                    ? "bg-crypto-purple text-white"
+                    : "bg-crypto-light-card/30 text-gray-300 hover:bg-crypto-light-card/50"
+                }`}
+              >
+                AI Prediction
+              </button>
+            </div>
+          </div>
+
           {/* Stats row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatsCard 
@@ -163,7 +191,11 @@ const Dashboard = () => {
                     </button>
                   ))}
                 </div>
-                <PriceComparisonChart data={filteredPriceData} pair={selectedPair} />
+                {predictionView === "ai" ? (
+                  <AIPredictionChart pair={selectedPair} />
+                ) : (
+                  <PriceComparisonChart data={filteredPriceData} pair={selectedPair} />
+                )}
               </div>
               
               {/* Price table */}
