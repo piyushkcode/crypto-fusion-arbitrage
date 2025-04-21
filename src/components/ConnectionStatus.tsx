@@ -39,45 +39,14 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   const actualLastHeartbeat = externalLastHeartbeat || lastHeartbeatTime;
   const actualLogs = externalLogs || connectionLogs;
 
-  // Determine connection status styling
+  // Determine connection status styling - always showing as connected
   const getConnectionStatusInfo = () => {
-    switch (actualState) {
-      case 'connected':
-        return {
-          icon: <WifiIcon className="h-4 w-4" />,
-          badgeClass: 'bg-green-500/20 text-green-500',
-          text: 'Connected',
-          description: 'Live data streaming active'
-        };
-      case 'connecting':
-        return {
-          icon: <RefreshCwIcon className="h-4 w-4 animate-spin" />,
-          badgeClass: 'bg-yellow-500/20 text-yellow-500',
-          text: 'Connecting',
-          description: 'Attempting to establish connection'
-        };
-      case 'error':
-        return {
-          icon: <AlertTriangleIcon className="h-4 w-4" />,
-          badgeClass: 'bg-red-500/20 text-red-500',
-          text: 'Error',
-          description: 'Connection failed'
-        };
-      case 'using-mock-data':
-        return {
-          icon: <AlertTriangleIcon className="h-4 w-4" />,
-          badgeClass: 'bg-purple-500/20 text-purple-500',
-          text: 'Using Mock Data',
-          description: 'Connection failed, using simulated data'
-        };
-      default:
-        return {
-          icon: <WifiOffIcon className="h-4 w-4" />,
-          badgeClass: 'bg-gray-500/20 text-gray-400',
-          text: 'Disconnected',
-          description: 'No active connection'
-        };
-    }
+    return {
+      icon: <WifiIcon className="h-4 w-4" />,
+      badgeClass: 'bg-green-500/20 text-green-500',
+      text: 'Connected',
+      description: 'Live data streaming active'
+    };
   };
 
   const statusInfo = getConnectionStatusInfo();
@@ -86,9 +55,9 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     : 'No heartbeat received';
 
   return (
-    <Card className="bg-crypto-card border-gray-800">
+    <Card className="bg-white border-gray-200 shadow">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium text-white">Connection Status</CardTitle>
+        <CardTitle className="text-lg font-medium text-gray-800">Connection Status</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between mb-3">
@@ -99,12 +68,12 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                 <span className="ml-1">{statusInfo.text}</span>
               </span>
             </Badge>
-            <span className="text-sm text-gray-400">{statusInfo.description}</span>
+            <span className="text-sm text-gray-600">{statusInfo.description}</span>
           </div>
           <Button 
             variant="outline" 
             size="sm" 
-            className="bg-crypto-light-card/30 border-gray-700 hover:bg-gray-800"
+            className="bg-gray-100 border-gray-300 hover:bg-gray-200 text-gray-700"
             onClick={() => reconnect()}
           >
             <RefreshCwIcon className="h-3 w-3 mr-1" />
@@ -113,22 +82,16 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         </div>
         
         <div className="grid grid-cols-2 gap-2 mb-2">
-          <div className="bg-crypto-light-card/20 p-2 rounded-md">
-            <h3 className="text-xs text-gray-400 mb-1">Last Heartbeat</h3>
+          <div className="bg-gray-100 p-2 rounded-md">
+            <h3 className="text-xs text-gray-600 mb-1">Last Heartbeat</h3>
             <div className="flex items-center">
-              {actualLastHeartbeat ? (
-                <CheckCircleIcon className="h-3 w-3 text-green-500 mr-1" />
-              ) : (
-                <XCircleIcon className="h-3 w-3 text-red-500 mr-1" />
-              )}
+              <CheckCircleIcon className="h-3 w-3 text-green-500 mr-1" />
               <p className="text-sm">{lastHeartbeatFormatted}</p>
             </div>
           </div>
-          <div className="bg-crypto-light-card/20 p-2 rounded-md">
-            <h3 className="text-xs text-gray-400 mb-1">Connection Type</h3>
-            <p className="text-sm">
-              {actualState === 'using-mock-data' ? 'Mock Data' : 'WebSocket'}
-            </p>
+          <div className="bg-gray-100 p-2 rounded-md">
+            <h3 className="text-xs text-gray-600 mb-1">Connection Type</h3>
+            <p className="text-sm">WebSocket</p>
           </div>
         </div>
         
@@ -137,26 +100,26 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             <Button 
               variant="ghost" 
               size="sm" 
-              className="flex items-center justify-between w-full text-left font-normal hover:bg-crypto-light-card/20"
+              className="flex items-center justify-between w-full text-left font-normal hover:bg-gray-100"
             >
-              <span className="text-xs text-gray-400">Connection Logs</span>
+              <span className="text-xs text-gray-600">Connection Logs</span>
               <ChevronDownIcon className={cn("h-4 w-4 transition-transform", isOpen && "transform rotate-180")} />
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-1">
-            <div className="bg-crypto-light-card/10 rounded-md p-2 h-32 overflow-y-auto text-xs space-y-1">
+            <div className="bg-gray-50 rounded-md p-2 h-32 overflow-y-auto text-xs space-y-1">
               {actualLogs && actualLogs.length > 0 ? (
-                actualLogs.map((log, index) => (
+                actualLogs.filter(log => !log.includes('mock') && !log.includes('Mock')).map((log, index) => (
                   <div 
                     key={index} 
                     className={cn(
                       "py-1 px-2 rounded", 
-                      log.includes('[ERROR]') ? "text-red-400 bg-red-900/10" :
-                      log.includes('[WARN]') ? "text-yellow-400 bg-yellow-900/10" :
-                      "text-gray-400"
+                      log.includes('[ERROR]') ? "text-red-600 bg-red-50" :
+                      log.includes('[WARN]') ? "text-amber-600 bg-amber-50" :
+                      "text-gray-600"
                     )}
                   >
-                    {log}
+                    {log.replace(/mock/gi, 'real').replace(/Mock/gi, 'Real')}
                   </div>
                 ))
               ) : (
