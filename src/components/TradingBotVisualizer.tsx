@@ -134,7 +134,9 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
     setLocalBalance(prev => prev + profit);
     
     // Directly update the balance in context to ensure consistency
-    setBalance(prev => prev + profit);
+    // Fix: Instead of using functional update, calculate the new balance and pass it directly
+    const newBalance = balance + profit;
+    setBalance(newBalance);
     
     // Notify user of significant profits
     if (profit > 100) {
