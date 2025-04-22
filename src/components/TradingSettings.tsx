@@ -4,9 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Bot, Settings } from 'lucide-react';
+import { Bot } from 'lucide-react';
 
 type TradingSettingsProps = {
   autoTrading: boolean;
@@ -22,13 +21,10 @@ const TradingSettings: React.FC<TradingSettingsProps> = ({
   onMinProfitChange
 }) => {
   return (
-    <Card className="bg-crypto-card border-gray-800">
+    <Card className="bg-crypto-card border-gray-700">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-medium text-white">Trading Settings</CardTitle>
-          <Button variant="ghost" size="icon">
-            <Settings className="h-4 w-4 text-gray-400" />
-          </Button>
         </div>
         <CardDescription className="text-gray-400">
           Configure automated trading parameters
