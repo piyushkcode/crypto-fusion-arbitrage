@@ -82,11 +82,11 @@ export function generatePriceData(exchange: string, symbol: string): PriceData {
   
   // Generate realistic and dynamic volume
   const baseVolume = {
-    'BTC/USDT': 1000,
-    'ETH/USDT': 5000,
-    'XRP/USDT': 20000,
-    'SOL/USDT': 8000,
-    'ADA/USDT': 50000
+    'BTC/USDT': 1000 + Math.random() * 500, // More dynamic volume
+    'ETH/USDT': 5000 + Math.random() * 2000,
+    'XRP/USDT': 20000 + Math.random() * 5000,
+    'SOL/USDT': 8000 + Math.random() * 3000,
+    'ADA/USDT': 50000 + Math.random() * 10000
   }[symbol] || 1000;
   
   // More dynamic volume: ±50% variation and independent for each generation
@@ -142,7 +142,7 @@ export function getMostActivePairs(priceData: PriceData[]): string[] {
 export function generateArbitrageOpportunities(
   priceData: PriceData[], 
   minProfit: number = 0.5, 
-  strategyType: string = 'simple'
+  strategyType: string = 'all'
 ): ArbitrageOpportunity[] {
   const opportunities: ArbitrageOpportunity[] = [];
   
@@ -252,6 +252,35 @@ export function generateArbitrageOpportunities(
             status: Math.random() > 0.6 ? 'active' : (Math.random() > 0.5 ? 'executed' : 'expired'),
             type: 'statistical',
             zScore: parseFloat(zScore)
+          });
+        }
+      }
+    }
+    
+    // Add AI prediction arbitrage opportunities
+    if (strategyType === 'AI prediction' || strategyType === 'all') {
+      const exchangePairs = [
+        ['Binance', 'Bybit'],
+        ['KuCoin', 'OKX'],
+        ['Binance', 'KuCoin'],
+        ['Bybit', 'OKX']
+      ];
+      
+      for (const [exchange1, exchange2] of exchangePairs) {
+        if (Math.random() > 0.7) {
+          const profitPercent = minProfit + Math.random() * 2.5;
+          
+          opportunities.push({
+            id: `ai-${exchange1}-${exchange2}-${symbol}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+            pair: symbol,
+            buyExchange: exchange1,
+            sellExchange: exchange2,
+            buyPrice: prices[0]?.last * 0.99 || 100,
+            sellPrice: prices[0]?.last * 1.01 || 101,
+            profitPercent,
+            timestamp: new Date(),
+            status: Math.random() > 0.6 ? 'active' : (Math.random() > 0.5 ? 'executed' : 'expired'),
+            type: 'AI prediction'
           });
         }
       }

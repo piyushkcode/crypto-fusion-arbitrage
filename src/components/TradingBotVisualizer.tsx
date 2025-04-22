@@ -64,7 +64,7 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
       ]
     };
     
-    // Rotate through different strategies
+    // Rotate through different strategies more frequently
     const strategyInterval = setInterval(() => {
       const randomStrategy = strategies[Math.floor(Math.random() * strategies.length)];
       setCurrentStrategy(randomStrategy);
@@ -81,7 +81,7 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
     
     // Execute trades with each strategy
     const tradeInterval = setInterval(() => {
-      if (Math.random() > 0.7) {
+      if (Math.random() > 0.6) { // Increased chance of executing trades
         executeTrade();
       }
     }, 5000);
@@ -95,7 +95,8 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
   const executeTrade = () => {
     const pairs = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'ADA/USDT'];
     const randomPair = pairs[Math.floor(Math.random() * pairs.length)];
-    const randomProfit = +(minProfit + Math.random() * 0.5).toFixed(2);
+    // Vary profit more to show different results
+    const randomProfit = +(minProfit + Math.random() * 1.5).toFixed(2);
     const timestamp = new Date().toLocaleTimeString();
     const tradeStrategy = currentStrategy;
     
@@ -111,7 +112,7 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
       pair: randomPair,
       amount,
       price: buyPrice,
-      exchange: tradeStrategy === 'triangular' ? 'Binance' : 'Bybit',
+      exchange: getRandomExchange(tradeStrategy),
       status: 'completed',
       profit
     });
@@ -125,7 +126,7 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
     };
     setTrades(prev => [newTrade, ...prev].slice(0, 10));
     
-    // Update local balance mirror
+    // Update local balance mirror to ensure it stays consistent with the context
     setLocalBalance(prev => prev + profit);
     
     // Add to logs
@@ -135,14 +136,25 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
     ].slice(0, 20));
   };
   
+  // Helper function to get appropriate exchange based on strategy
+  const getRandomExchange = (strategy: string): string => {
+    const exchanges = ['Binance', 'Bybit', 'KuCoin', 'OKX'];
+    if (strategy === 'triangular') {
+      // For triangular arbitrage, only use a single exchange
+      return exchanges[Math.floor(Math.random() * exchanges.length)];
+    }
+    // For other strategies, return random exchange
+    return exchanges[Math.floor(Math.random() * exchanges.length)];
+  };
+  
   // Helper function to get base price for pairs
   const getBasePriceForPair = (pair: string): number => {
     switch(pair) {
-      case 'BTC/USDT': return 87500;
-      case 'ETH/USDT': return 1560;
-      case 'XRP/USDT': return 2.08;
-      case 'SOL/USDT': return 138;
-      case 'ADA/USDT': return 0.63;
+      case 'BTC/USDT': return 87000 + Math.random() * 1900; // 87000-88900
+      case 'ETH/USDT': return 1530 + Math.random() * 60;    // 1530-1590
+      case 'XRP/USDT': return 2.06 + Math.random() * 0.03;  // 2.06-2.09
+      case 'SOL/USDT': return 134.72 + Math.random() * 6.58; // 134.72-141.30
+      case 'ADA/USDT': return 0.6192 + Math.random() * 0.0288; // 0.6192-0.648
       default: return 100;
     }
   };

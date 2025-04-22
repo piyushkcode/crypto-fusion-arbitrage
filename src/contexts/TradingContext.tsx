@@ -63,13 +63,15 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Update balance based on trade
     if (tradeData.status === 'completed') {
       if (tradeData.type === 'buy') {
+        // For buy orders, deduct the cost from balance
         setBalance(prev => prev - (tradeData.amount * tradeData.price));
       } else {
+        // For sell orders, add the proceeds to balance
         setBalance(prev => prev + (tradeData.amount * tradeData.price));
       }
       
-      // If it's a profit from arbitrage
-      if (tradeData.profit) {
+      // If it's a profit from arbitrage, add it to balance
+      if (tradeData.profit && tradeData.profit > 0) {
         setBalance(prev => prev + tradeData.profit);
       }
     }

@@ -7,7 +7,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRightIcon, TriangleIcon, BarChartIcon } from 'lucide-react';
+import { ArrowRightIcon, TriangleIcon, BarChartIcon, ZapIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ArbitrageOpportunity } from '@/utils/mockData';
 
@@ -42,6 +42,8 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
         return <TriangleIcon className="h-3 w-3 mr-1" />;
       case 'statistical':
         return <BarChartIcon className="h-3 w-3 mr-1" />;
+      case 'AI prediction':
+        return <ZapIcon className="h-3 w-3 mr-1" />;
       default: // simple
         return <ArrowRightIcon className="h-3 w-3 mr-1" />;
     }
@@ -51,20 +53,22 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
   const getStrategyBadgeClass = (type: string): string => {
     switch (type) {
       case 'triangular':
-        return 'bg-blue-100 text-blue-600';
+        return 'bg-crypto-light-card/30 text-green-400';
       case 'statistical':
-        return 'bg-green-100 text-green-600';
+        return 'bg-crypto-light-card/30 text-purple-400';
+      case 'AI prediction':
+        return 'bg-crypto-light-card/30 text-yellow-400';
       default: // simple
-        return 'bg-purple-100 text-purple-600';
+        return 'bg-crypto-light-card/30 text-blue-400';
     }
   };
 
   return (
-    <Card className="bg-white border-gray-200 shadow">
+    <Card className="bg-crypto-card border-gray-700 shadow">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between text-lg font-medium text-gray-800">
+        <CardTitle className="flex items-center justify-between text-lg font-medium text-white">
           <span>Arbitrage Opportunities</span>
-          <Badge variant="outline" className="bg-blue-100 text-blue-600 border-blue-200">
+          <Badge variant="outline" className="bg-crypto-burgundy/20 text-crypto-burgundy border-crypto-burgundy">
             {opportunities.length} Found
           </Badge>
         </CardTitle>
@@ -75,10 +79,10 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
             opportunities.map((opportunity) => (
               <div 
                 key={opportunity.id} 
-                className="rounded-md bg-gray-50 p-3 hover:bg-gray-100 transition-colors border border-gray-200"
+                className="rounded-md bg-crypto-light-card/20 p-3 hover:bg-crypto-light-card/30 transition-colors border border-gray-700"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium text-gray-800">{opportunity.pair}</div>
+                  <div className="font-medium text-white">{opportunity.pair}</div>
                   <div className="flex items-center space-x-2">
                     <Badge 
                       variant="outline" 
@@ -98,30 +102,36 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
                 {/* Render exchange route based on arbitrage type */}
                 <div className="flex items-center justify-between text-sm mb-2">
                   {(opportunity.type === 'triangular') ? (
-                    <div className="flex items-center text-gray-600">
-                      <span className="text-blue-600">{opportunity.exchange || 'Unknown'}</span>
-                      <span className="mx-2 text-xs text-gray-500">Triangular</span>
-                      <span className="text-green-600">{opportunity.path || 'Multiple Pairs'}</span>
+                    <div className="flex items-center text-gray-300">
+                      <span className="text-blue-400">{opportunity.exchange || 'Unknown'}</span>
+                      <span className="mx-2 text-xs text-gray-400">Triangular</span>
+                      <span className="text-green-400">{opportunity.path || 'Multiple Pairs'}</span>
                     </div>
                   ) : opportunity.type === 'statistical' ? (
-                    <div className="flex items-center text-gray-600">
-                      <span className="text-blue-600">{opportunity.buyExchange}</span>
-                      <ArrowRightIcon className="mx-2 h-3 w-3 text-gray-500" />
-                      <span className="text-green-600">{opportunity.sellExchange}</span>
-                      <span className="ml-2 text-xs text-gray-500">Z-Score: {opportunity.zScore || 'N/A'}</span>
+                    <div className="flex items-center text-gray-300">
+                      <span className="text-blue-400">{opportunity.buyExchange}</span>
+                      <ArrowRightIcon className="mx-2 h-3 w-3 text-gray-400" />
+                      <span className="text-green-400">{opportunity.sellExchange}</span>
+                      <span className="ml-2 text-xs text-gray-400">Z-Score: {opportunity.zScore || 'N/A'}</span>
+                    </div>
+                  ) : opportunity.type === 'AI prediction' ? (
+                    <div className="flex items-center text-gray-300">
+                      <span className="text-yellow-400">AI Confidence: {(Math.random() * 30 + 70).toFixed(1)}%</span>
+                      <ArrowRightIcon className="mx-2 h-3 w-3 text-gray-400" />
+                      <span className="text-green-400">Pred. Gap: {(Math.random() * 1.5 + 0.5).toFixed(2)}%</span>
                     </div>
                   ) : (
-                    <div className="flex items-center text-gray-600">
-                      <span className="text-blue-600">{opportunity.buyExchange}</span>
-                      <ArrowRightIcon className="mx-2 h-3 w-3 text-gray-500" />
-                      <span className="text-green-600">{opportunity.sellExchange}</span>
+                    <div className="flex items-center text-gray-300">
+                      <span className="text-blue-400">{opportunity.buyExchange}</span>
+                      <ArrowRightIcon className="mx-2 h-3 w-3 text-gray-400" />
+                      <span className="text-green-400">{opportunity.sellExchange}</span>
                     </div>
                   )}
-                  <div className="text-gray-600">{formatTime(opportunity.timestamp)}</div>
+                  <div className="text-gray-400">{formatTime(opportunity.timestamp)}</div>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-400">
                     {opportunity.priceDiff !== undefined ? 
                       `Diff: $${opportunity.priceDiff.toFixed(2)}` : 
                       opportunity.type === 'triangular' ? 
@@ -131,7 +141,7 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
                   </span>
                   <span className={cn(
                     "font-medium",
-                    opportunity.profitPercent > 1 ? "text-green-600" : "text-red-600"
+                    opportunity.profitPercent > 1 ? "text-green-500" : "text-red-500"
                   )}>
                     {opportunity.profitPercent.toFixed(2)}% Profit
                   </span>
@@ -139,7 +149,7 @@ const ArbitrageOpportunities: React.FC<ArbitrageOpportunitiesProps> = ({ opportu
               </div>
             ))
           ) : (
-            <div className="text-center py-4 text-gray-500">
+            <div className="text-center py-4 text-gray-400">
               No arbitrage opportunities available
             </div>
           )}
