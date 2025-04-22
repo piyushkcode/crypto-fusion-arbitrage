@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -42,9 +41,16 @@ const Trading = () => {
     });
   }, [trades, balance, totalProfit, winRate]);
 
-  // Filter recent trades for selected pair
+  // Filter recent trades to include both manual and bot trades for the selected pair
   const recentTrades = trades
-    .filter(trade => trade.pair === selectedPair)
+    .filter(trade => {
+      if (autoTrading) {
+        // When bot is active, show all trades regardless of pair
+        return true;
+      }
+      // When bot is inactive, only show trades for selected pair
+      return trade.pair === selectedPair;
+    })
     .slice(0, 10);
 
   return (
@@ -60,7 +66,6 @@ const Trading = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1">
-              {/* Trading Settings */}
               <div className="space-y-6">
                 <Card className="bg-crypto-card border-gray-800">
                   <CardHeader className="pb-2">
@@ -97,7 +102,6 @@ const Trading = () => {
             </div>
             
             <div className="lg:col-span-2">
-              {/* Trading Overview */}
               <Card className="bg-crypto-card border-gray-800 mb-6">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg font-medium text-white">Trading Overview</CardTitle>
@@ -129,7 +133,9 @@ const Trading = () => {
               {/* Recent Trades */}
               <Card className="bg-crypto-card border-gray-800">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg font-medium text-white">Recent Trades</CardTitle>
+                  <CardTitle className="text-lg font-medium text-white">
+                    Recent Trades {autoTrading ? '(Including Bot Trades)' : ''}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {recentTrades.length > 0 ? (
@@ -144,6 +150,11 @@ const Trading = () => {
                                 {trade.type.toUpperCase()}
                               </span>
                               <span className="ml-2 font-medium">{trade.pair}</span>
+                              {autoTrading && (
+                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-crypto-purple/20 text-crypto-purple">
+                                  Bot Trade
+                                </span>
+                              )}
                             </div>
                             <div className="text-sm text-gray-400">
                               {formatDistanceToNow(trade.timestamp, { addSuffix: true })}
@@ -162,6 +173,11 @@ const Trading = () => {
                               </div>
                             )}
                           </div>
+                          {trade.exchange && (
+                            <div className="mt-1 text-xs text-gray-400">
+                              Exchange: {trade.exchange}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
