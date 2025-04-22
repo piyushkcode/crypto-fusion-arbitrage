@@ -30,22 +30,22 @@ export interface ArbitrageOpportunity {
   zScore?: number;
 }
 
-// Define base prices for different cryptocurrencies
+// Define base prices for different cryptocurrencies with updated ranges
 const basePrices: Record<string, number> = {
-  'BTC/USDT': 85138, 
-  'ETH/USDT': 1612.87,
-  'XRP/USDT': 2.10,
-  'SOL/USDT': 135.43,
-  'ADA/USDT': 0.6289
+  'BTC/USDT': 87000 + Math.random() * 1900, // 87000 to 88900
+  'ETH/USDT': 1530 + Math.random() * 60,    // 1530 to 1590
+  'XRP/USDT': 2.06 + Math.random() * 0.03,  // 2.06 to 2.09
+  'SOL/USDT': 134.72 + Math.random() * 6.58, // 134.72 to 141.30
+  'ADA/USDT': 0.6192 + Math.random() * 0.0288 // 0.6192 to 0.648
 };
 
 // Price overrides for Bybit (based on the specific prices provided)
 const bybitPrices: Record<string, number> = {
-  'BTC/USDT': 85138 * 1.01, // Only slightly higher (1%)
-  'ETH/USDT': 1612.87 * 1.02,
-  'XRP/USDT': 2.10 * 1.02,
-  'SOL/USDT': 135.43 * 1.03,
-  'ADA/USDT': 0.6289 * 1.015
+  'BTC/USDT': basePrices['BTC/USDT'] * 0.995, // Slightly lower (0.5%)
+  'ETH/USDT': basePrices['ETH/USDT'] * 0.997,
+  'XRP/USDT': basePrices['XRP/USDT'] * 0.998,
+  'SOL/USDT': basePrices['SOL/USDT'] * 0.996,
+  'ADA/USDT': basePrices['ADA/USDT'] * 0.997
 };
 
 // Define list of exchanges
@@ -54,20 +54,25 @@ export const exchanges = ['Binance', 'Bybit', 'KuCoin', 'OKX'];
 // Define cryptocurrency pairs
 export const cryptoPairs = ['BTC/USDT', 'ETH/USDT', 'XRP/USDT', 'SOL/USDT', 'ADA/USDT'];
 
+// Function to get a random volume between 500 and 2500
+const getRandomVolume = (baseVolume: number) => {
+  return baseVolume * (0.5 + Math.random());
+};
+
 export function generatePriceData(exchange: string, symbol: string): PriceData {
   const now = new Date();
   let basePrice: number;
   
   // Select base price based on exchange with more subtle variations
   if (exchange === 'Bybit') {
-    // Reduce the price difference, now only about 1-3% different from Binance
-    basePrice = bybitPrices[symbol] || basePrices[symbol] * (1 + (Math.random() * 0.03 - 0.015));
+    // Reduce the price difference, now only about 0.3-0.5% different from Binance
+    basePrice = bybitPrices[symbol] || basePrices[symbol] * 0.995;
   } else {
     basePrice = basePrices[symbol];
   }
   
-  // Add small random variation (±0.5%) for different exchanges
-  const variationPercent = (Math.random() * 1 - 0.5) / 100;
+  // Add small random variation (±0.1%) for different exchanges
+  const variationPercent = (Math.random() * 0.2 - 0.1) / 100;
   const last = basePrice * (1 + variationPercent);
   
   // Generate bid and ask with tight spread
@@ -84,11 +89,11 @@ export function generatePriceData(exchange: string, symbol: string): PriceData {
     'ADA/USDT': 50000
   }[symbol] || 1000;
   
-  // More dynamic volume: ±30% variation and independent for each generation
-  const volume = baseVolume * (0.7 + Math.random() * 0.6);
+  // More dynamic volume: ±50% variation and independent for each generation
+  const volume = getRandomVolume(baseVolume);
   
-  // More dynamic 24h change: between -5% and +5%
-  const change24h = (Math.random() * 10 - 5);
+  // More dynamic 24h change: between -2% and +2%
+  const change24h = (Math.random() * 4 - 2);
 
   return {
     exchange,

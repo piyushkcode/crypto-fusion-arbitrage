@@ -8,6 +8,7 @@ import { cryptoPairs } from '@/utils/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { useTradingContext } from '@/contexts/TradingContext';
 import { formatDistanceToNow } from 'date-fns';
+import TradingBotVisualizer from '@/components/TradingBotVisualizer';
 
 const Trading = () => {
   const { toast } = useToast();
@@ -40,43 +41,6 @@ const Trading = () => {
       winRate: winRate
     });
   }, [trades, balance, totalProfit, winRate]);
-  
-  // Auto trading simulation
-  useEffect(() => {
-    if (autoTrading) {
-      const interval = setInterval(() => {
-        // Random chance of finding an opportunity
-        if (Math.random() > 0.7) {
-          const profit = (Math.random() * 3) + minProfit;
-          if (profit >= minProfit) {
-            // Create a simulation of arbitrage trade
-            const buyExchange = Math.random() > 0.5 ? 'Binance' : 'Kucoin';
-            const sellExchange = buyExchange === 'Binance' ? 'Kucoin' : 'Binance';
-            const buyPrice = 60000 * (1 - (profit/200));
-            const sellPrice = 60000 * (1 + (profit/200));
-            const amount = Math.random() * 0.5 + 0.1;
-            
-            addTrade({
-              type: 'buy',
-              pair: selectedPair,
-              amount,
-              price: buyPrice,
-              exchange: buyExchange,
-              status: 'completed',
-              profit: amount * sellPrice - amount * buyPrice
-            });
-            
-            toast({
-              title: "Arbitrage Trade Executed",
-              description: `${profit.toFixed(2)}% profit on ${selectedPair} (${buyExchange} → ${sellExchange})`,
-            });
-          }
-        }
-      }, 15000); // Every 15 seconds try to execute a trade
-      
-      return () => clearInterval(interval);
-    }
-  }, [autoTrading, selectedPair, minProfit, addTrade, toast]);
 
   // Filter recent trades for selected pair
   const recentTrades = trades
@@ -127,6 +91,8 @@ const Trading = () => {
                   minProfit={minProfit}
                   onMinProfitChange={setMinProfit}
                 />
+                
+                {autoTrading && <TradingBotVisualizer isActive={autoTrading} minProfit={minProfit} />}
               </div>
             </div>
             
@@ -140,7 +106,7 @@ const Trading = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Trading Balance</p>
-                      <p className="text-2xl font-bold">${tradingStats.balance.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">${balance.toFixed(2)}</p>
                     </div>
                     <div className="bg-crypto-light-card/30 p-4 rounded">
                       <p className="text-sm text-gray-400">Active Trades</p>

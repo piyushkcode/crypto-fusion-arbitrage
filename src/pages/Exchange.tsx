@@ -12,7 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 const Exchange = () => {
   const { toast } = useToast();
-  const { trades, addTrade } = useTradingContext();
+  const { trades, addTrade, balance } = useTradingContext();
   const [selectedPair, setSelectedPair] = useState('BTC/USDT');
   const [selectedExchange, setSelectedExchange] = useState('Binance');
   const [amount, setAmount] = useState('');
@@ -37,6 +37,19 @@ const Exchange = () => {
     const price = type === 'buy' ? 
       60000 * (1 + Math.random() * 0.01) : // Slightly random price
       60000 * (1 - Math.random() * 0.01);
+    
+    // Calculate total cost of the transaction
+    const totalCost = Number(amount) * price;
+    
+    // Check if user has enough balance for the transaction
+    if (type === 'buy' && totalCost > balance) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You need $${totalCost.toFixed(2)} but only have $${balance.toFixed(2)}`,
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Add trade to history
     addTrade({
@@ -137,6 +150,10 @@ const Exchange = () => {
                     >
                       Sell
                     </Button>
+                  </div>
+                  
+                  <div className="pt-2 text-center text-gray-400 text-sm">
+                    Available Balance: ${balance.toFixed(2)}
                   </div>
                 </div>
               </CardContent>

@@ -23,15 +23,18 @@ interface TradingContextType {
   balance: number;
   totalProfit: number;
   winRate: number;
+  resetTradingState: () => void;
 }
 
 const TradingContext = createContext<TradingContextType | undefined>(undefined);
+
+const INITIAL_BALANCE = 10000; // Starting balance
 
 export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [autoTrading, setAutoTrading] = useState(false);
   const [minProfit, setMinProfit] = useState(1.0);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [balance, setBalance] = useState(10000); // Starting balance
+  const [balance, setBalance] = useState(INITIAL_BALANCE);
 
   // Calculate total profit
   const totalProfit = trades.reduce((sum, trade) => {
@@ -72,6 +75,13 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  // Reset all trading state (for the refresh button)
+  const resetTradingState = () => {
+    setTrades([]);
+    setBalance(INITIAL_BALANCE);
+    setAutoTrading(false);
+  };
+
   return (
     <TradingContext.Provider 
       value={{ 
@@ -83,7 +93,8 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
         addTrade,
         balance,
         totalProfit,
-        winRate
+        winRate,
+        resetTradingState
       }}
     >
       {children}

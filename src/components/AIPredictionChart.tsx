@@ -22,30 +22,45 @@ const AIPredictionChart: React.FC<Props> = ({ pair }) => {
   useEffect(() => {
     setLoading(true);
     
-    // Generate mock prediction data for any pair
+    // Generate prediction data based on updated price ranges
     const generatePredictions = () => {
       const now = new Date();
       const data: PredictionPoint[] = [];
       
-      // Get base price based on pair
+      // Get base price based on pair with updated ranges
       let basePrice = 0;
-      if (pair.includes("BTC")) basePrice = 35000;
-      else if (pair.includes("ETH")) basePrice = 2200;
-      else if (pair.includes("SOL")) basePrice = 175;
-      else if (pair.includes("XRP")) basePrice = 0.52;
+      if (pair.includes("BTC")) basePrice = 87500 + Math.random() * 1400;
+      else if (pair.includes("ETH")) basePrice = 1530 + Math.random() * 60;
+      else if (pair.includes("SOL")) basePrice = 134.72 + Math.random() * 6.58;
+      else if (pair.includes("XRP")) basePrice = 2.06 + Math.random() * 0.03;
+      else if (pair.includes("ADA")) basePrice = 0.6192 + Math.random() * 0.0288;
       else basePrice = 100;
       
       // Generate data with an upward trend for most pairs to look optimistic
       const isUptrend = Math.random() > 0.3;
       const trendFactor = isUptrend ? 1.0015 : 0.9985;
       
+      // Create some future gaps/opportunities
+      let prevPrice = basePrice;
+      const hasSuddenGap = Math.random() > 0.7; // 30% chance of sudden price gap
+      const gapHour = hasSuddenGap ? Math.floor(Math.random() * 12) + 6 : -1; // Gap between 6-18 hours ahead
+      const gapSize = basePrice * (Math.random() * 0.02 + 0.01) * (Math.random() > 0.5 ? 1 : -1); // 1-3% gap
+      
       for (let i = 0; i < 24; i++) {
         const timestamp = new Date(now.getTime() + i * 60 * 60 * 1000).toISOString();
         
         // Add some randomness to the prediction
         const randomFactor = 1 + (Math.random() - 0.5) * 0.01;
-        const price = basePrice * Math.pow(trendFactor, i) * randomFactor;
         
+        // Add sudden gap if this is the gap hour
+        let price;
+        if (i === gapHour) {
+          price = prevPrice + gapSize;
+        } else {
+          price = basePrice * Math.pow(trendFactor, i) * randomFactor;
+        }
+        
+        prevPrice = price;
         data.push({ timestamp, price });
       }
       

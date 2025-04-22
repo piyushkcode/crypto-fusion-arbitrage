@@ -1,7 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, LineChart, ArrowRight, Check } from 'lucide-react';
+import { Bot, LineChart, ArrowRight, Check, RefreshCw, TrendingUp, Zap } from 'lucide-react';
+import { useTradingContext } from '@/contexts/TradingContext';
 
 interface TradingBotVisualizerProps {
   isActive: boolean;
@@ -9,10 +10,16 @@ interface TradingBotVisualizerProps {
 }
 
 const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, minProfit }) => {
+  const { addTrade, balance } = useTradingContext();
   const [currentAction, setCurrentAction] = useState<string>('Scanning markets');
+  const [currentStrategy, setCurrentStrategy] = useState<string>('simple');
   const [logs, setLogs] = useState<string[]>([]);
-  const [trades, setTrades] = useState<{pair: string, profit: number, time: string}[]>([]);
-  const [balance, setBalance] = useState(10000);
+  const [trades, setTrades] = useState<{pair: string, profit: number, time: string, strategy: string}[]>([]);
+  const [localBalance, setLocalBalance] = useState(balance);
+  
+  useEffect(() => {
+    setLocalBalance(balance);
+  }, [balance]);
   
   useEffect(() => {
     if (!isActive) {
@@ -23,61 +30,131 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
     // Reset logs when activated
     setLogs(['System initialized', 'Connecting to exchange APIs', 'Monitoring price feeds']);
     
-    const actions = [
-      'Scanning markets',
-      'Analyzing price patterns',
-      'Calculating arbitrage opportunities',
-      'Evaluating market depth',
-      'Running AI prediction models',
-      'Checking order books',
-      'Calculating execution costs',
-      'Performing volatility analysis'
-    ];
+    // All four arbitrage strategy types
+    const strategies = ['simple', 'triangular', 'statistical', 'AI prediction'];
     
-    // Rotate through different actions
-    const actionInterval = setInterval(() => {
-      const randomAction = actions[Math.floor(Math.random() * actions.length)];
+    const actionsMap: Record<string, string[]> = {
+      'simple': [
+        'Scanning for cross-exchange price gaps',
+        'Analyzing exchange price differences',
+        'Monitoring exchange order books',
+        'Calculating cross-exchange fees',
+        'Evaluating price arbitrage opportunities'
+      ],
+      'triangular': [
+        'Searching for triangular trade paths',
+        'Calculating three-way conversion rates',
+        'Analyzing market depth on same exchange',
+        'Evaluating triangular trade opportunities',
+        'Computing cross-currency exchange rates'
+      ],
+      'statistical': [
+        'Calculating Z-scores for price pairs',
+        'Running mean reversion analysis',
+        'Computing cointegration statistics',
+        'Analyzing statistical arbitrage signals',
+        'Running pair correlation tests'
+      ],
+      'AI prediction': [
+        'Running LSTM price prediction models',
+        'Analyzing historical price patterns',
+        'Training XGBoost statistical model',
+        'Computing prediction confidence scores',
+        'Running time-series prediction analysis'
+      ]
+    };
+    
+    // Rotate through different strategies
+    const strategyInterval = setInterval(() => {
+      const randomStrategy = strategies[Math.floor(Math.random() * strategies.length)];
+      setCurrentStrategy(randomStrategy);
+      
+      const strategyActions = actionsMap[randomStrategy] || actionsMap['simple'];
+      const randomAction = strategyActions[Math.floor(Math.random() * strategyActions.length)];
       setCurrentAction(randomAction);
       
-      // Occasionally add logs
-      if (Math.random() > 0.7) {
-        const newLog = `${randomAction} - ${new Date().toLocaleTimeString()}`;
-        setLogs(prev => [newLog, ...prev].slice(0, 20));
-      }
+      // Add logs for current strategy
+      const newLog = `[${randomStrategy}] ${randomAction} - ${new Date().toLocaleTimeString()}`;
+      setLogs(prev => [newLog, ...prev].slice(0, 20));
       
-      // Occasionally execute trades
-      if (Math.random() > 0.9) {
-        executeTrade();
-      }
     }, 3000);
     
-    return () => clearInterval(actionInterval);
-  }, [isActive]);
+    // Execute trades with each strategy
+    const tradeInterval = setInterval(() => {
+      if (Math.random() > 0.7) {
+        executeTrade();
+      }
+    }, 5000);
+    
+    return () => {
+      clearInterval(strategyInterval);
+      clearInterval(tradeInterval);
+    };
+  }, [isActive, minProfit]);
   
   const executeTrade = () => {
-    const pairs = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
+    const pairs = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'ADA/USDT'];
     const randomPair = pairs[Math.floor(Math.random() * pairs.length)];
     const randomProfit = +(minProfit + Math.random() * 0.5).toFixed(2);
     const timestamp = new Date().toLocaleTimeString();
+    const tradeStrategy = currentStrategy;
     
-    // Add trade to history
+    // Add to trading context with real trade
+    const amount = Math.random() * 0.5 + 0.1;
+    const buyPrice = getBasePriceForPair(randomPair) * (1 - (randomProfit / 200));
+    const sellPrice = getBasePriceForPair(randomPair) * (1 + (randomProfit / 200));
+    const profit = amount * (sellPrice - buyPrice);
+    
+    // Create a trade in the context
+    addTrade({
+      type: 'buy',
+      pair: randomPair,
+      amount,
+      price: buyPrice,
+      exchange: tradeStrategy === 'triangular' ? 'Binance' : 'Bybit',
+      status: 'completed',
+      profit
+    });
+    
+    // Add trade to local state for visualization
     const newTrade = {
       pair: randomPair,
       profit: randomProfit,
-      time: timestamp
+      time: timestamp,
+      strategy: tradeStrategy
     };
     setTrades(prev => [newTrade, ...prev].slice(0, 10));
     
-    // Update balance
-    const tradeAmount = Math.random() * 500 + 100;
-    const profitAmount = tradeAmount * (randomProfit / 100);
-    setBalance(prev => +(prev + profitAmount).toFixed(2));
+    // Update local balance mirror
+    setLocalBalance(prev => prev + profit);
     
     // Add to logs
     setLogs(prev => [
-      `Executed trade: ${randomPair} - Profit: ${randomProfit}%`,
+      `[${tradeStrategy}] Executed trade: ${randomPair} - Profit: ${randomProfit}% ($${profit.toFixed(2)})`,
       ...prev
     ].slice(0, 20));
+  };
+  
+  // Helper function to get base price for pairs
+  const getBasePriceForPair = (pair: string): number => {
+    switch(pair) {
+      case 'BTC/USDT': return 87500;
+      case 'ETH/USDT': return 1560;
+      case 'XRP/USDT': return 2.08;
+      case 'SOL/USDT': return 138;
+      case 'ADA/USDT': return 0.63;
+      default: return 100;
+    }
+  };
+  
+  const getStrategyIcon = (strategy: string) => {
+    switch(strategy) {
+      case 'simple': return <ArrowRight className="h-3 w-3 text-blue-500" />;
+      case 'triangular': return <RefreshCw className="h-3 w-3 text-green-500" />;
+      case 'statistical': return <TrendingUp className="h-3 w-3 text-purple-500" />;
+      case 'AI prediction': return <Zap className="h-3 w-3 text-yellow-500" />;
+      default: return <Check className="h-3 w-3 text-green-500" />;
+    }
   };
   
   if (!isActive) {
@@ -100,7 +177,7 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
       </CardHeader>
       <CardContent>
         <div className="mb-4 bg-crypto-dark rounded-md p-3">
-          <div className="text-sm text-gray-300 mb-1">Current Action</div>
+          <div className="text-sm text-gray-300 mb-1">Current Strategy: <span className="text-crypto-purple capitalize">{currentStrategy}</span></div>
           <div className="text-white font-medium flex items-center">
             <LineChart className="h-4 w-4 mr-2 text-crypto-purple" />
             {currentAction}
@@ -110,7 +187,7 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-crypto-dark rounded-md p-3">
             <div className="text-sm text-gray-300 mb-1">Current Balance</div>
-            <div className="text-white font-medium">${balance.toLocaleString()}</div>
+            <div className="text-white font-medium">${localBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
           </div>
           <div className="bg-crypto-dark rounded-md p-3">
             <div className="text-sm text-gray-300 mb-1">Trades Executed</div>
@@ -125,8 +202,9 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
               {trades.map((trade, i) => (
                 <div key={i} className="bg-crypto-dark/50 rounded-md p-2 flex justify-between items-center">
                   <div className="flex items-center">
-                    <Check className="h-3 w-3 text-green-500 mr-1" />
-                    <span className="text-xs text-white">{trade.pair}</span>
+                    {getStrategyIcon(trade.strategy)}
+                    <span className="text-xs text-white ml-1">{trade.pair}</span>
+                    <span className="text-xs text-gray-500 ml-2 capitalize">{trade.strategy}</span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-xs text-green-400">+{trade.profit}%</span>
