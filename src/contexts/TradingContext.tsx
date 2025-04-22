@@ -21,6 +21,7 @@ interface TradingContextType {
   trades: Trade[];
   addTrade: (trade: Omit<Trade, 'id' | 'timestamp'>) => void;
   balance: number;
+  setBalance: (value: number) => void;
   totalProfit: number;
   winRate: number;
   resetTradingState: () => void;
@@ -63,15 +64,19 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Update balance based on trade
     if (tradeData.status === 'completed') {
       if (tradeData.type === 'buy') {
-        // For buy orders, deduct the cost from balance
-        setBalance(prev => prev - (tradeData.amount * tradeData.price));
+        // For buy orders, if bot trading is not active, deduct the cost
+        if (!autoTrading) {
+          setBalance(prev => prev - (tradeData.amount * tradeData.price));
+        }
       } else {
-        // For sell orders, add the proceeds to balance
-        setBalance(prev => prev + (tradeData.amount * tradeData.price));
+        // For sell orders, if bot trading is not active, add the proceeds
+        if (!autoTrading) {
+          setBalance(prev => prev + (tradeData.amount * tradeData.price));
+        }
       }
       
-      // If it's a profit from arbitrage, add it to balance
-      if (tradeData.profit && tradeData.profit > 0) {
+      // If it's a profit from arbitrage, ALWAYS add it to balance regardless of auto trading
+      if (tradeData.profit !== undefined) {
         setBalance(prev => prev + tradeData.profit);
       }
     }
@@ -94,6 +99,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
         trades, 
         addTrade,
         balance,
+        setBalance,  // Expose setBalance to allow direct updates from components
         totalProfit,
         winRate,
         resetTradingState

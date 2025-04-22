@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bot, LineChart, ArrowRight, Check, RefreshCw, TrendingUp, Zap } from 'lucide-react';
 import { useTradingContext } from '@/contexts/TradingContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface TradingBotVisualizerProps {
   isActive: boolean;
@@ -10,7 +11,8 @@ interface TradingBotVisualizerProps {
 }
 
 const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, minProfit }) => {
-  const { addTrade, balance } = useTradingContext();
+  const { addTrade, balance, setBalance } = useTradingContext();
+  const { toast } = useToast();
   const [currentAction, setCurrentAction] = useState<string>('Scanning markets');
   const [currentStrategy, setCurrentStrategy] = useState<string>('simple');
   const [logs, setLogs] = useState<string[]>([]);
@@ -100,11 +102,13 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
     const timestamp = new Date().toLocaleTimeString();
     const tradeStrategy = currentStrategy;
     
-    // Add to trading context with real trade
+    // Calculate trade details with always positive profit
     const amount = Math.random() * 0.5 + 0.1;
     const buyPrice = getBasePriceForPair(randomPair) * (1 - (randomProfit / 200));
     const sellPrice = getBasePriceForPair(randomPair) * (1 + (randomProfit / 200));
-    const profit = amount * (sellPrice - buyPrice);
+    
+    // Ensure profit is always positive for bot trades
+    const profit = Math.abs(amount * (sellPrice - buyPrice));
     
     // Create a trade in the context
     addTrade({
@@ -114,7 +118,7 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
       price: buyPrice,
       exchange: getRandomExchange(tradeStrategy),
       status: 'completed',
-      profit
+      profit: profit  // Always positive profit for bot trades
     });
     
     // Add trade to local state for visualization
@@ -128,6 +132,17 @@ const TradingBotVisualizer: React.FC<TradingBotVisualizerProps> = ({ isActive, m
     
     // Update local balance mirror to ensure it stays consistent with the context
     setLocalBalance(prev => prev + profit);
+    
+    // Directly update the balance in context to ensure consistency
+    setBalance(prev => prev + profit);
+    
+    // Notify user of significant profits
+    if (profit > 100) {
+      toast({
+        title: "High Profit Trade!",
+        description: `The trading bot made $${profit.toFixed(2)} on ${randomPair}`,
+      });
+    }
     
     // Add to logs
     setLogs(prev => [
